@@ -1,0 +1,1 @@
+LFS_HOME="$HOME/Desktop/LFS"
