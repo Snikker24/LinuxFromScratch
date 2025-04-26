@@ -1,1 +1,3 @@
-LFS_HOME="$HOME/Desktop/LFS"
+LFS_HOME=$HOME/Desktop/LFS
+LFS_MOUNT=/dev/vda4
+LFS_FS=ext4
