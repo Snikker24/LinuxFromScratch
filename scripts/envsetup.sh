@@ -24,17 +24,17 @@ BLINK='\e[5m'
 NEWLINE=$'\n'
 
 #Title
-
-echo -e "${LBLUE}${BOLD}"
-echo '╔══════════════════════════════════════════════════════════════════════════════════╗'
-echo '║   __ _                    ___                    __                _       _     ║'
-echo '║  / /(_)_ __  _   ___  __ / __\ __ ___  _ __ ___ / _\ ___ _ __ __ _| |_ ___| |__  ║'
-echo "║ / / | | '_ \| | | \ \/ // _\| '__/ _ \| '_ \` _ \\\\ \ / __| '__/ _\` | __/ __| '_ \ ║"
-echo '║/ /__| | | | | |_| |>  </ /  | | | (_) | | | | | |\ \ (__| | | (_| | || (__| | | |║'
-echo '║\____/_|_| |_|\__,_/_/\_\/   |_|  \___/|_| |_| |_\__/\___|_|  \__,_|\__\___|_| |_|║'
-echo '╚══════════════════════════════════════════════════════════════════════════════════╝'
-echo -e "${GREEN}${BOLD}> LinuxFromScratch setup utility script${DEFAULT}${NEWLINE}"
-
+display_title(){
+	echo -e "${LBLUE}${BOLD}"
+	echo '╔══════════════════════════════════════════════════════════════════════════════════╗'
+	echo '║   __ _                    ___                    __                _       _     ║'
+	echo '║  / /(_)_ __  _   ___  __ / __\ __ ___  _ __ ___ / _\ ___ _ __ __ _| |_ ___| |__  ║'
+	echo "║ / / | | '_ \| | | \ \/ // _\| '__/ _ \| '_ \` _ \\\\ \ / __| '__/ _\` | __/ __| '_ \ ║"
+	echo '║/ /__| | | | | |_| |>  </ /  | | | (_) | | | | | |\ \ (__| | | (_| | || (__| | | |║'
+	echo '║\____/_|_| |_|\__,_/_/\_\/   |_|  \___/|_| |_| |_\__/\___|_|  \__,_|\__\___|_| |_|║'
+	echo '╚══════════════════════════════════════════════════════════════════════════════════╝'
+	echo -e "${GREEN}${BOLD}> LinuxFromScratch setup utility script${DEFAULT}${NEWLINE}"
+}
 
 
 #Function declaration
@@ -197,7 +197,7 @@ download_packages(){
 		packname=${packname[$((${#packname[@]}-1))]}
 		echo -en "${GREEN}${BOLD}Downloading package: ${ORANGE} $packname [$i/$len]${DEFAULT}"
 		wget -q -P "$target_dir/" $pack
-		echo -e "	${LBLUE}${BOLD}DONE${DEFAULT}"
+		echo -e " ${LBLUE}${BOLD}DONE${DEFAULT}"
 
 		i=$((i+1))
 
@@ -208,7 +208,7 @@ download_packages(){
 
 setup_lfs(){
 
-
+	display_title
 	input_break
 
 	local config=$(<config.txt)
@@ -257,11 +257,13 @@ setup_lfs(){
 
 	IFS=$OIFS
 
+	echo -e "${NEWLINE}${YELLOW}${BOLD}WARNING:${DEFAULT} Check that the settings are corresponding to your desired configuration before continuing."
+
 	input_break
 
 	umask 022
 
-	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Checking directory structure..."
+	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Checking LFS home structure..."
 
 	setup_directory "$(eval "echo \"$LFS_HOME\"")"
 	setup_directory "$(eval "echo \"$LFS_HOME\"")/mnt"
@@ -278,6 +280,8 @@ setup_lfs(){
 
 	export LFS_HOME
 	export LFS
+
+	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Mounting root partition."
 
 	if [[ -z $LFS_MOUNT || -z $LFS_FS ]]; then
 
@@ -301,8 +305,23 @@ setup_lfs(){
 		FS="$(eval "echo \"$LFS_FS\"")"
 		MOUNT="$(eval "echo \"$LFS_MOUNT\"")"
 
-		echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Mounting root partition at ${MOUNT} (${FS})."
-		sudo mount -v -t $FS $MOUNT $LFS
+		echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Found root partition ${MOUNT} (${FS}) from config.txt."
+
+		read -n 1 -s -r -p "$(echo -e "${NEWLINE}${YELLOW}${BOLD}[!]${DEFAULT} Do you wish to use this partition?${NEWLINE}1. YES${NEWLINE}0. NO${NEWLINE} ${NEWLINE}")" input
+
+		while [[ $input != "0" && $input != "1" ]]; do
+			echo -e "${NEWLINE}${RED}${BOLD}ERROR:${DEFAULT} Not a valid answer!"
+			read -n 1 -s -r -p "$(echo -e "${NEWLINE}${YELLOW}${BOLD}[!]${DEFAULT} Do you wish to use this partition?${NEWLINE}1. YES${NEWLINE}0. NO${NEWLINE} ${NEWLINE}")" input
+
+		done
+
+		if (( $input==1 )); then
+			sudo mount -v -t $FS $MOUNT $LFS
+
+		else
+			mount_root_part
+
+		fi
 
 	fi
 
@@ -310,7 +329,7 @@ setup_lfs(){
 	export LFS_FS
 	
 
-	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Checking package sources target location."
+	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Checking directory structure."
 	setup_directory "${LFS}/sources"
 
 	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Setting up directory permissions."
