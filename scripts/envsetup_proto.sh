@@ -10,8 +10,11 @@ LBLUE='\033[0;94m'
 GREEN='\033[0;32m'
 BLACK='\033[0;30m'
 
-LREDBG='\033[30;41m'
+REDBG='\033[30;41m'
 GREENBG='\033[30;42m'
+LBLUEBG='\e[30;104m'
+YELLOWBG='\033[30;103m'
+
 
 DEFAULT='\033[0m'
 BOLD='\033[1m'
@@ -120,9 +123,42 @@ show_part_table(){
 
 }
 
-input_break(){
-	echo -e "${NEWLINE}${GREENBG}${BLACk}${BOLD}Press any key to continue...${DEFAULT}"
-	read -n 1 -s -r
+ibreak(){
+
+	local color=$GREENBG
+
+	if [[ (($#>0)) ]]; then
+		
+		if [[ (($#>1)) ]]; then
+
+			case $1 in
+
+				"-e")
+					color=$REDBG
+					;;
+
+				"-i")
+					color=$LBLUEBG
+					;;
+
+				"-w")
+					color=$YELLOWBG
+					;;
+
+
+			esac
+
+			echo -e "${NEWLINE}${color}${BOLD}$2${DEFAULT}"
+
+		else
+
+			echo -e "${NEWLINE}${color}${BOLD}$1${DEFAULT}"
+
+		fi
+
+		read -n 1 -s -r
+
+	fi
 }
 
 squash(){
@@ -245,6 +281,27 @@ info(){
 
 }
 
+msg(){
+
+
+	local OIFS=$IFS
+	IFS="${NEWLINE}"
+	local lines=($(squash $1 $2))
+	
+
+	echo -e "${GREEN}${BOLD}[MESSAGE]${DEFAULT}"
+	
+	for i in ${lines[@]}
+	do
+
+		echo -e "${GREEN}${BOLD}[#]${DEFAULT} $i"
+
+	done
+
+	IFS=$OIFS
+
+}
+
 
 percentage_bar(){
 
@@ -276,45 +333,63 @@ percentage_bar(){
 
 }
 
+setup_directory(){
 
-setup_lfs_home(){
+	if(($#>0)); then
 
+		if test -d $1; then
+			info "$1: OK"
+		else
+			warn 40 "$1: NOT FOUND"
+			info 40 "Creating directory..."
+			mkdir -pv "$1"
+		fi
+
+	fi
+
+}
+
+
+setup_lfs(){
+
+
+	show_title
 
 	local config=$(<config.txt)
 	
+	#echo $config
+
 	local OIFS=$IFS
 	IFS=$NEWLINE
 
 	local vars=($config)
 
-	IFS="="
 
-	info 40 "Generating variables from config.txt"
+	info 40 "Reading variables from config.txt"
 
 	for var in ${vars[@]}
 	do
 
+		IFS="="
 		var=($var)
-		case ${varmap[0]} in 
+		IFS=$OIFS
+
+		case ${var[0]} in 
 		
 			"LFS_HOME")
 
-				LFS_HOME=${varmap[1]}
+				LFS_HOME=${var[1]}
 				LFS="$(eval "echo \"$LFS_HOME\"")/mnt/lfs"
-				echo -e "${GREEN}${BOLD}[${varmap[0]}]${DEFAULT} $(eval "echo \"$LFS_HOME\"")"
-				echo -e "${GREEN}${BOLD}[LFS]${DEFAULT} $LFS"
 				;;
 
 			"LFS_PART")
 
-				LFS_MOUNT=${varmap[1]}
-				echo -e "${GREEN}${BOLD}[${varmap[0]}]${DEFAULT} $(eval "echo \"$LFS_PART\"")"
+				LFS_PART=${var[1]}
 				;;
 
 			"LFS_FS")
 
-				LFS_FS=${varmap[1]}
-				echo -e "${GREEN}${BOLD}[${varmap[0]}]${DEFAULT} $(eval "echo \"$LFS_FS\"")"
+				LFS_FS=${var[1]}
 				;;
 
 		esac
@@ -322,7 +397,38 @@ setup_lfs_home(){
 
 	done
 
-	input_break
+	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_HOME\"")"
+	echo -e "${GREEN}${BOLD}[ LFS ]${DEFAULT} $LFS"
+	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_PART\"")"
+	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_FS\"")"
+
+	ibreak -i "Press any key to start setup..."
+
+
+
+
+	if [[ $LFS_PART != "" && $LFS_FS!="" ]]; then
+
+		local ans
+
+		show_title -b
+		info 60 "Found root partition: $LFS_PART ($LFS_FS) inside config.txt file. Do you wish to use it? Alternatively, you can choose another one."
+		warn 60 "Make sure the partition exists!"
+		echo -e "1. Yes${NEWLINE}0. No${NEWLINE}"
+		read -n 1 -r -s ans 
+
+		while [[ !$ans=~'^[0-9]+$' && $ans != 0 && $ans != 1 ]]; do
+
+			show_title -b
+			errme 40 "Please insert only 0 or 1!"
+			info 60 "Found root partition: $LFS_PART ($LFS_FS) inside config.txt file. Do you wish to use it? Alternatively, you can choose another one."
+			warn 60 "Make sure the partition exists!"
+			echo -e "1. Yes${NEWLINE}0. No${NEWLINE}"
+			read -n 1 -r -s ans
+
+		done
+
+	fi
 
 }
 
@@ -338,7 +444,7 @@ save_vars(){
 select_root_part(){
 
 	show_title -b
-	
+	msg 60 "${BOLD}STEP I:${DEFAULT} Please choose the root partition for LFS system."
 
 	local pstr="$(show_part_table)"
 
@@ -354,7 +460,7 @@ select_root_part(){
 
 	IFS=$OIFS
 
-	warn 40 "Be careful when choosing root partition! Avoid using host OS partitions as it can break your system!"
+	warn 60 "Be careful when choosing root partition! Avoid using host OS partitions as it can break your system!"
 	
 	info 40 "Suitable devices found: $((count-1))"
 
@@ -402,128 +508,8 @@ select_root_part(){
 
 }
 
-select_root_part0(){
-
-
-	local OIFS= $IFS
-	IFS=$NEWLINE
-
-	local pttype=($(lsblk -o SIZE,PARTTYPENAME))
-
-	local z=0;
-	for i in ${pttype[@]}
-	do
-		#pttype[$z]=${pttype[$z]:1}
-		pttype[$z]=${i//[^[:ascii:][:space:]]/}
-		pttype[$z]=${pttype[$z]:6}
-		z=$((z+1))
-	done
-
-	local devlist=($( lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT))
-
-	IFS=' ';
-
-	local devstr=''
-
-	local k=0;
-	local device
-	z=0
-	for i in "${devlist[@]}"
-	do
-		#echo $i;
-
-		read -a device <<< $i
-
-
-		#device[0]=$( echo ${device[0]} | sed "s/\W*//" )
-		device[0]=${device[0]//[^[:alnum:]]/}
-
-
-		#echo ${device[0]}
-		#echo ${device[1]}
-		#echo ${device[2]}
-
-		#echo $z${pttype[$z]}
-
-		
-		if [[ ${device[3]} != '[SWAP]' && ${device[2]} != "" ]]; then
-		
-			if (( k!=0 )); then
-
-				#if ((k<=${#devlist[@]}/3));then
-					devstr="${devstr}${LBLUE}${BOLD}${k}${DEFAULT}	${device[0]}	${device[1]}	${device[2]}	${pttype[$k]}		${device[3]}${NEWLINE}"
-				#else
-					#devstr="${devstr}${k} ${device[0]} ${device[1]} ${device[2]}"
-				#fi
-
-			else
-				devstr="${GREEN}${BOLD}${devstr}ID	${device[0]}	${device[1]}	${device[2]}	PARTITION-TYPE		${device[3]}${DEFAULT}${NEWLINE}"
-				
-			fi
-
-		fi
-
-		k=$((k+1));
-
-	done
-
-	k=$((k-1));
-	devstr="${devstr}${NEWLINE}${ORANGE}${BOLD}0 Cancel (CTRL+C)${DEFAULT} ${NEWLINE}"
-
-	if [[ $k>0 ]]; then
-
-		echo -e "${NEWLINE}${YELLOW}${BOLD}WARNING:${DEFAULT} Be careful! Choosing the wrong partition for LinuxFromScratch can break your system!"
-		echo -e "${YELLOW}${BOLD}WARNING:${DEFAULT} Avoid using the host OS partitions (ROOT, BOOT, SWAP, EFI, HOME, ...) as the main root partition."$NEWLINE
-		echo -e "${LBLUE}${BOLD}INFO:${DEFAULT} suitable partitions found: $k"$NEWLINE
-		echo -e $devstr
-		#echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Enter partition ID to mount:"
-		
-		read -p "$(echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Enter partition ID to mount:")" id
-
-		while [[ !$id=~'^[0-9]+$' && $id<0  || $id>$k ]]; do
-
-			echo -e "${RED}${BOLD}ERROR:${DEFAULT} Not a valid partition ID! Try again..."
-			#echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Enter partition ID to mount:"
-			read -p "$(echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Enter partition ID to mount:")" id
-
-		done
-
-
-		if (($id==0)); then
-			IFS=$OIFS
-			echo -e "${LBLUE}${BOLD}INFO:${DEFAULT} Operation cancelled. Exiting..."
-			exit
-		else
-
-			IFS=$NEWLINE
-
-			devlist=($devstr)
-
-			IFS="	"
-
-			read -a device <<< ${devlist[$id]}
-
-			echo -e "${LBLUE}${BOLD}INFO:${DEFAULT} Partition $id (/dev/${device[1]} | ${device[2]} | ${device[3]})) has been selected. Mounting..."
-
-			LFS_MOUNT="/dev/${device[1]}"
-			LFS_FS=${device[3]}
-
-		fi
-
-	else
-
-		echo -e "${RED}${BOLD}ERROR:${DEFAULT} No suitable partitions found!"
-		echo -e "${RED}${BOLD}ERROR:${DEFAULT} Please create a new partition and run the script again."
-		echo -e "${RED}${BOLD}ERROR:${DEFAULT} Exiting..."
-		exit
-	fi
-
-	IFS=$OIFS
-
-}
-
 #show_part_table
-setup_lfs_home
+setup_lfs
 select_root_part
 
 
