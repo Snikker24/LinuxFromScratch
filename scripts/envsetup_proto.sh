@@ -20,6 +20,8 @@ BLINK='\e[5m'
 
 NEWLINE=$'\n'
 
+PROGRESS=0
+
 #Functions
 
 show_title(){
@@ -27,15 +29,30 @@ show_title(){
 	clear
 
 	echo -e "${LBLUE}${BOLD}"
-	echo '╔══════════════════════════════════════════════════════════════════════════════════╗'
-	echo '║   __ _                    ___                    __                _       _     ║'
-	echo '║  / /(_)_ __  _   ___  __ / __\ __ ___  _ __ ___ / _\ ___ _ __ __ _| |_ ___| |__  ║'
-	echo "║ / / | | '_ \| | | \ \/ // _\| '__/ _ \| '_ \` _ \\\\ \ / __| '__/ _\` | __/ __| '_ \ ║"
-	echo '║/ /__| | | | | |_| |>  </ /  | | | (_) | | | | | |\ \ (__| | | (_| | || (__| | | |║'
-	echo '║\____/_|_| |_|\__,_/_/\_\/   |_|  \___/|_| |_| |_\__/\___|_|  \__,_|\__\___|_| |_|║'
-	echo '╚══════════════════════════════════════════════════════════════════════════════════╝'
+	
+	
+	echo -e "╔════════════════════════════════════╗"
+	echo -e "║ _     _                            ║"
+	echo -e "║| |   (_)_ __  _   ___  __          ║"
+	echo -e "║| |   | | '_ \| | | \ \/ /          ║"
+	echo -e "║| |___| | | | | |_| |>  <           ║"
+	echo -e "║|_____|_|_| |_|\__,_/_/\_\          ║"
+	echo -e "║|  ___| __ ___  _ __ ___            ║"
+	echo -e "║| |_ | '__/ _ \| '_ \` _ \           ║"
+	echo -e "║|  _|| | | (_) | | | | | |          ║"
+	echo -e "║|_|__|_|  \___/|_| |_|_|_|    _     ║"
+	echo -e "║/ ___|  ___ _ __ __ _| |_ ___| |__  ║"
+	echo -e "║\___ \ / __| '__/ _\` | __/ __| '_ \ ║"
+	echo -e "║ ___) | (__| | | (_| | || (__| | | |║"
+	echo -e "║|____/ \___|_|  \__,_|\__\___|_| |_|║"
+	echo -e "╚════════════════════════════════════╝"
+
 	echo -e "${GREEN}${BOLD}> LinuxFromScratch setup utility script${DEFAULT}${NEWLINE}"
 
+
+	if [[ (($#>0)) && $1=="-b" ]]; then
+		percentage_bar $PROGRESS 60
+	fi
 }
 
 
@@ -108,47 +125,282 @@ input_break(){
 	read -n 1 -s -r
 }
 
+squash(){
+
+	local OIFS=$IFS
+	
+	local size=$2
+	size=${size//[^[:alnum:]]/}
+	size=${#size}
+
+	local count=0
+
+	IFS=" ${NEWLINE}"
+	local words=($2)
+
+	local x=0
+	local m=$1
+	
+
+	#echo -en "${YELLOW}${BOLD}[WARNING]${DEFAULT}"
+	
+	for i in ${words[@]}
+	do
+
+
+		if [[ $((count+${#i}+1 < m*x)) == 1 ]] ; then
+
+			echo -en " $i"
+
+			count=$((count+1+${#i}))
+
+		else
+
+			#echo -en "${NEWLINE}${YELLOW}${BOLD}[#]${DEFAULT} "
+			echo -en "${NEWLINE}$i"
+
+			#while [[ $(( count < m*x )) == 1 ]]; do
+
+				#echo -en " "
+				#count=$((count+1))
+
+			#done
+
+
+			count=$((count+${#i}))
+			x=$((x+1))
+			m=$((m*x))
+
+		fi
+
+
+	done
+
+	echo -en "${NEWLINE}"
+
+	IFS=$OIFS
+
+}
+
 warn(){
 
 
 	local OIFS=$IFS
-
-	
-	size=${#${$1//[^[:alnum:]]/}}
-
-	IFS=" "
-
-	count=0
-
+	IFS="${NEWLINE}"
+	local lines=($(squash $1 $2))
 	
 
+	echo -e "${YELLOW}${BOLD}[WARNING]${DEFAULT}"
+	
+	for i in ${lines[@]}
+	do
+
+		echo -e "${YELLOW}${BOLD}[#]${DEFAULT} $i"
+
+	done
+
+	IFS=$OIFS
+
+}
+
+errme(){
+
+
+	local OIFS=$IFS
+	IFS="${NEWLINE}"
+	local lines=($(squash $1 $2))
+	
+
+	echo -e "${RED}${BOLD}[ERROR]${DEFAULT}"
+	
+	for i in ${lines[@]}
+	do
+
+		echo -e "${RED}${BOLD}[#]${DEFAULT} $i"
+
+	done
+
+	IFS=$OIFS
+
+}
+
+info(){
+
+
+	local OIFS=$IFS
+	IFS="${NEWLINE}"
+	local lines=($(squash $1 $2))
+	
+
+	echo -e "${LBLUE}${BOLD}[INFO]${DEFAULT}"
+	
+	for i in ${lines[@]}
+	do
+
+		echo -e "${LBLUE}${BOLD}[#]${DEFAULT} $i"
+
+	done
 
 	IFS=$OIFS
 
 }
 
 
+percentage_bar(){
+
+	local percent=$1
+	local len=$2
+
+	echo -en "[${GREEN}${BOLD}"
+
+	fill=$((percent*len/100))
+
+	for ((i=1; i<=len; i++))
+	do
+
+		if [[ $((i <= fill)) == 1 ]]; then
+
+			echo -en "■"
+
+		else
+
+			echo -en "□"
+
+		fi
+
+	done
+
+	echo -en "${DEFAULT}]${percent}%${NEWLINE}"
+
+
+
+}
+
+
+setup_lfs_home(){
+
+
+	local config=$(<config.txt)
+	
+	local OIFS=$IFS
+	IFS=$NEWLINE
+
+	local vars=($config)
+
+	IFS="="
+
+	info 40 "Generating variables from config.txt"
+
+	for var in ${vars[@]}
+	do
+
+		var=($var)
+		case ${varmap[0]} in 
+		
+			"LFS_HOME")
+
+				LFS_HOME=${varmap[1]}
+				LFS="$(eval "echo \"$LFS_HOME\"")/mnt/lfs"
+				echo -e "${GREEN}${BOLD}[${varmap[0]}]${DEFAULT} $(eval "echo \"$LFS_HOME\"")"
+				echo -e "${GREEN}${BOLD}[LFS]${DEFAULT} $LFS"
+				;;
+
+			"LFS_PART")
+
+				LFS_MOUNT=${varmap[1]}
+				echo -e "${GREEN}${BOLD}[${varmap[0]}]${DEFAULT} $(eval "echo \"$LFS_PART\"")"
+				;;
+
+			"LFS_FS")
+
+				LFS_FS=${varmap[1]}
+				echo -e "${GREEN}${BOLD}[${varmap[0]}]${DEFAULT} $(eval "echo \"$LFS_FS\"")"
+				;;
+
+		esac
+
+
+	done
+
+	input_break
+
+}
+
+
+save_vars(){
+
+	echo
+
+}
+
+#Root partition select+mount
 
 select_root_part(){
 
+	show_title -b
+	
 
-	local partitions="$(show_part_table)"
-	echo -e "$partitions"
+	local pstr="$(show_part_table)"
+
+	local partitions
 
 	local OIFS=$IFS	
 
-	partitions=($partitions)
+	IFS="${NEWLINE}"
 
-	count=${partitions[@]}
+	partitions=($pstr)
 
-	read -n 1 -p "$(echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Please enter root partition ID:")"
+	count=${#partitions[@]}
+
+	IFS=$OIFS
+
+	warn 40 "Be careful when choosing root partition! Avoid using host OS partitions as it can break your system!"
+	
+	info 40 "Suitable devices found: $((count-1))"
+
+	echo -e "$pstr"
+
+	local id
+	read -p "$(echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Please enter root partition ID:")" id
+	echo ""
+
+
+	while [[ !$id=~'^[0-9]+$' && $id > $((count-1)) || $id <1 ]]; do
+
+		show_title -b
+		warn 40 "Be careful when choosing root partition! Avoid using host OS partitions as it can break your system!"
+
+		info 40 "Suitable devices found: $((count-1))"
+		echo -e "$pstr"
+
+		errme 60 "Not a valid partition! Try again..."
+		read  -p "$(echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Please enter root partition ID:")" id
+		echo ""
+
+	done
+
+
+	IFS="	"
+
+	PROGRESS=$((PROGRESS+1))
+
+	attr=(${partitions[$id]})
+
+	show_title -b
+	#echo -e "$pstr"
+
+	info 40 "Partition $id ( /dev/${attr[1]} | ${attr[2]} | ${attr[3]} ) has been selected as root partition!"
+	info 40 "Mounting selected partition..."
+
+	export LFS_FS=${attr[3]}
+	export LFS_PART=${attr[1]}
+	sudo mount -v -t $LFS_FS $LFS_PART $LFS
+
 
 	IFS=$OIFS
 
 
 }
-
-
 
 select_root_part0(){
 
@@ -270,8 +522,8 @@ select_root_part0(){
 
 }
 
-
 #show_part_table
+setup_lfs_home
 select_root_part
 
 
