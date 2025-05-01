@@ -1,3 +1,4 @@
 LFS_HOME=$HOME/Desktop/LFS
 LFS_PART=/dev/vda4
 LFS_FS=ext4
+

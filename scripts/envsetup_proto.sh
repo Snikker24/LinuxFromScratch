@@ -101,11 +101,11 @@ show_part_table(){
 
 			if (( $k != 0 )); then
 				
-				devstr="${devstr}${LBLUE}${BOLD}${z}${DEFAULT}	${device[0]}	${device[1]}	${device[2]}	${device[3]}		${pttype[$k]}${NEWLINE}"
+				devstr="${devstr}${LBLUE}${BOLD}${z}${DEFAULT}	${device[0]}	${device[1]}	${device[2]}	${pttype[$k]}	${device[3]}	${NEWLINE}"
 
 			else
 
-				devstr="${devstr}${GREEN}${BOLD}${devstr}ID	${device[0]}	${device[1]}	${device[2]}	${device[3]}	PARTITION-TYPE${DEFAULT}${NEWLINE}"
+				devstr="${devstr}${GREEN}${BOLD}${devstr}ID	${device[0]}	${device[1]}	${device[2]}	PARTITION-TYPE		${device[3]}	${DEFAULT}${NEWLINE}"
 			
 			fi
 			z=$((z+1))
@@ -338,10 +338,10 @@ setup_directory(){
 	if(($#>0)); then
 
 		if test -d $1; then
-			info "$1: OK"
+			info 60 "$1: OK"
 		else
-			warn 40 "$1: NOT FOUND"
-			info 40 "Creating directory..."
+			warn 60 "$1: NOT FOUND"
+			info 60 "Creating directory..."
 			mkdir -pv "$1"
 		fi
 
@@ -350,101 +350,11 @@ setup_directory(){
 }
 
 
-setup_lfs(){
-
-
-	show_title
-
-	local config=$(<config.txt)
-	
-	#echo $config
-
-	local OIFS=$IFS
-	IFS=$NEWLINE
-
-	local vars=($config)
-
-
-	info 40 "Reading variables from config.txt"
-
-	for var in ${vars[@]}
-	do
-
-		IFS="="
-		var=($var)
-		IFS=$OIFS
-
-		case ${var[0]} in 
-		
-			"LFS_HOME")
-
-				LFS_HOME=${var[1]}
-				LFS="$(eval "echo \"$LFS_HOME\"")/mnt/lfs"
-				;;
-
-			"LFS_PART")
-
-				LFS_PART=${var[1]}
-				;;
-
-			"LFS_FS")
-
-				LFS_FS=${var[1]}
-				;;
-
-		esac
-
-
-	done
-
-	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_HOME\"")"
-	echo -e "${GREEN}${BOLD}[ LFS ]${DEFAULT} $LFS"
-	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_PART\"")"
-	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_FS\"")"
-
-	ibreak -i "Press any key to start setup..."
-
-
-
-
-	if [[ $LFS_PART != "" && $LFS_FS!="" ]]; then
-
-		local ans
-
-		show_title -b
-		info 60 "Found root partition: $LFS_PART ($LFS_FS) inside config.txt file. Do you wish to use it? Alternatively, you can choose another one."
-		warn 60 "Make sure the partition exists!"
-		echo -e "1. Yes${NEWLINE}0. No${NEWLINE}"
-		read -n 1 -r -s ans 
-
-		while [[ !$ans=~'^[0-9]+$' && $ans != 0 && $ans != 1 ]]; do
-
-			show_title -b
-			errme 40 "Please insert only 0 or 1!"
-			info 60 "Found root partition: $LFS_PART ($LFS_FS) inside config.txt file. Do you wish to use it? Alternatively, you can choose another one."
-			warn 60 "Make sure the partition exists!"
-			echo -e "1. Yes${NEWLINE}0. No${NEWLINE}"
-			read -n 1 -r -s ans
-
-		done
-
-	fi
-
-}
-
-
-save_vars(){
-
-	echo
-
-}
-
 #Root partition select+mount
 
 select_root_part(){
 
 	show_title -b
-	msg 60 "${BOLD}STEP I:${DEFAULT} Please choose the root partition for LFS system."
 
 	local pstr="$(show_part_table)"
 
@@ -488,28 +398,193 @@ select_root_part(){
 
 	IFS="	"
 
-	PROGRESS=$((PROGRESS+1))
-
 	attr=(${partitions[$id]})
 
 	show_title -b
 	#echo -e "$pstr"
 
-	info 40 "Partition $id ( /dev/${attr[1]} | ${attr[2]} | ${attr[3]} ) has been selected as root partition!"
-	info 40 "Mounting selected partition..."
-
-	export LFS_FS=${attr[3]}
-	export LFS_PART=${attr[1]}
-	sudo mount -v -t $LFS_FS $LFS_PART $LFS
-
+	info 40 "Partition /dev/${attr[1]} (${attr[2]} - ${attr[3]}) has been selected as root partition!"
+	ibreak "Press any key to mount selected partition..."
 
 	IFS=$OIFS
 
 
 }
 
-#show_part_table
-setup_lfs
-select_root_part
+save_vars(){
 
+	local config=""
+
+
+	if [[ $((${#LFS_HOME}>0)) == 1 ]]; then
+		config="LFS_HOME=${LFS_HOME}${NEWLINE}"
+	fi
+
+	if [[ $((${#LFS_PART}>0)) == 1 && $((${#LFS_FS}>0)) == 1 ]]; then	
+		config="${config}LFS_PART=${LFS_PART}${NEWLINE}"
+		config="${config}LFS_FS=${LFS_FS}${NEWLINE}"
+	fi
+
+	$(echo "$config" > "config.txt")
+
+}
+
+setup_lfs(){
+
+
+	show_title
+
+	local config=$(<config.txt)
+	
+	#echo $config
+
+	local OIFS=$IFS
+	IFS=$NEWLINE
+
+	local vars=($config)
+
+
+	info 40 "Reading variables from config.txt"
+
+	#Reading vars
+	for var in ${vars[@]}
+	do
+
+		IFS="="
+		var=($var)
+		IFS=$OIFS
+
+		case ${var[0]} in 
+		
+			"LFS_HOME")
+
+				LFS_HOME=${var[1]}
+				LFS="$(eval "echo \"$LFS_HOME\"")/mnt/lfs"
+				;;
+
+			"LFS_PART")
+
+				LFS_PART=${var[1]}
+				;;
+
+			"LFS_FS")
+
+				LFS_FS=${var[1]}
+				;;
+
+		esac
+
+
+	done
+
+	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_HOME\"")"
+	echo -e "${GREEN}${BOLD}[ LFS ]${DEFAULT} $LFS"
+	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_PART\"")"
+	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_FS\"")"
+
+	ibreak -i "Press any key to start setup..."
+
+	show_title -b
+	msg 60 "${BOLD}STEP I:${DEFAULT} Please choose the root partition for LFS system."
+	ibreak "Press any key to continue..."
+
+	if [[ $LFS_PART != "" && $LFS_FS!="" ]]; then
+
+		local ans
+
+		show_title -b
+		info 60 "Found root partition $LFS_PART ($LFS_FS) inside config.txt file. Do you wish to use it? Alternatively, you can choose another one."
+		warn 60 "Make sure the partition exists!"
+		echo -e "1. Yes${NEWLINE}0. No${NEWLINE}"
+		read -n 1 -r -s ans 
+
+		while [[ !$ans=~'^[0-9]+$' && $ans != 0 && $ans != 1 ]]; do
+
+			show_title -b
+			errme 40 "Please insert only 0 or 1!"
+			info 60 "Found root partition $LFS_PART ($LFS_FS) inside config.txt file. Do you wish to use it? Alternatively, you can choose another one."
+			warn 60 "Make sure the partition exists!"
+			echo -e "1. Yes${NEWLINE}0. No${NEWLINE}"
+			read -n 1 -r -s ans
+
+		done
+
+		if [[ $ans == 0 ]]; then
+
+			select_root_part
+
+		fi
+
+	else
+
+		select_root_part
+
+	fi
+
+	export LFS_HOME
+	export LFS
+	export LFS_PART
+	export LFS_FS
+
+	save_vars
+	
+	#Mounting root part
+
+	show_title -b
+	info 60 "Using $LFS_PART ($LFS_FS) as root partition. Mounting..."
+	sudo mount -v -t $LFS_FS $LFS_PART $LFS
+
+	PROGRESS=$((PROGRESS+1))
+
+
+	#Creating limited directory structure
+	
+	show_title -b
+	msg 80 "${BOLD}STEP II:${DEFAULT} Setting up limited directory structure:"
+	
+	setup_directory "${LFS}/sources"
+	setup_directory "${LFS}/etc"
+	setup_directory "${LFS}/var"
+	setup_directory "${LFS}/bin"
+	setup_directory "${LFS}/lib"
+	setup_directory "${LFS}/sbin"
+	
+
+	ibreak -w "Limited directory is all set up! Press any key to continue..."
+
+
+
+	##LAST STEP
+	#Unmounting per user choice
+
+	PROGRESS=100
+
+	show_title -b
+	info 60 "Done!"
+	msg 60 "Do you wish to unmount root partition ($LFS_PART - $LFS_FS)? Now it is safe to do so."
+	echo -e "1. Yes${NEWLINE}0. No${NEWLINE} "
+	read -n 1 -r -s ans
+	
+	while [[ !$ans=~'^[0-9]+$' && $ans != 0 && $ans != 1 ]]; do
+
+		show_title -b
+		errme 40 "Please insert only 0 or 1!"
+		info 60 "Done!"	
+		msg 60 "Do you wish to unmount root partition ($LFS_PART - $LFS_FS)? Now it is safe to do so."
+		echo -e "1. Yes${NEWLINE}0. No${NEWLINE} "
+		read -n 1 -r -s ans
+
+	done
+
+
+	if [[ $((ans==1)) ]]; then
+
+		sudo umount $LFS_PART
+
+	fi
+
+	clear
+}
+
+setup_lfs
 
