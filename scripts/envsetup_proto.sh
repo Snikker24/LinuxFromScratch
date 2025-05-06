@@ -349,6 +349,22 @@ setup_directory(){
 
 }
 
+slink(){
+
+	if(($#>1)); then
+
+		if test -L "$2"; then
+			info 60 "$2: SYMLINK FOUND"
+		else
+			warn 60 "$2: SYMLINK MISSING"
+			info 60 "Creating symlink..."
+			ln -s "$1" "$2"
+		fi
+
+	fi
+
+}
+
 
 #Root partition select+mount
 
@@ -477,10 +493,10 @@ setup_lfs(){
 
 	done
 
-	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_HOME\"")"
+	echo -e "${GREEN}${BOLD}[ LFS_HOME ]${DEFAULT} $(eval "echo \"$LFS_HOME\"")"
 	echo -e "${GREEN}${BOLD}[ LFS ]${DEFAULT} $LFS"
-	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_PART\"")"
-	echo -e "${GREEN}${BOLD}[ ${var[0]} ]${DEFAULT} $(eval "echo \"$LFS_FS\"")"
+	echo -e "${GREEN}${BOLD}[ LFS_PART ]${DEFAULT} $(eval "echo \"$LFS_PART\"")"
+	echo -e "${GREEN}${BOLD}[ LFS_FS ]${DEFAULT} $(eval "echo \"$LFS_FS\"")"
 
 	ibreak -i "Press any key to start setup..."
 
@@ -546,12 +562,28 @@ setup_lfs(){
 	setup_directory "${LFS}/etc"
 	setup_directory "${LFS}/var"
 	setup_directory "${LFS}/bin"
-	setup_directory "${LFS}/lib"
 	setup_directory "${LFS}/sbin"
+	setup_directory "${LFS}/lib"
+	setup_directory "${LFS}/tools"
+
+	case $(uname -m) in
+  	
+  		x86_64) setup_directory "${LFS}/lib64" ;;
 	
+	esac
 
-	ibreak -w "Limited directory is all set up! Press any key to continue..."
+	ibreak -w "All directories set up! Press any key to continue..."
 
+	#Creating symlinks
+	
+	show_title -b
+	msg 80 "${BOLD}STEP II:${DEFAULT} Setting up limited directory structure:"
+	slink "usr/bin" "${LFS}/bin"
+	slink "usr/sbin" "${LFS}/sbin"
+	slink "usr/lib" "${LFS}/lib"
+
+
+	ibreak -w "Symlinks configured! Press any key to continue..."
 
 
 	##LAST STEP
@@ -579,7 +611,12 @@ setup_lfs(){
 
 	if [[ $((ans==1)) ]]; then
 
-		sudo umount $LFS_PART
+
+		local output=$(sudo umount -v $LFS_PART 2>&1)
+
+		show_title -b
+		info 60 "$output. Exiting now..."
+		sleep 3
 
 	fi
 
