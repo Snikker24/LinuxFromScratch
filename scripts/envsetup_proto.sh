@@ -25,6 +25,8 @@ NEWLINE=$'\n'
 
 PROGRESS=0
 
+STEPS=5
+
 #Functions
 
 show_title(){
@@ -330,7 +332,6 @@ percentage_bar(){
 	echo -en "${DEFAULT}]${percent}%${NEWLINE}"
 
 
-
 }
 
 setup_directory(){
@@ -353,12 +354,12 @@ slink(){
 
 	if(($#>1)); then
 
-		if test -L "$2"; then
+		if test -L "$2" || test -e "$2"; then
 			info 60 "$2: SYMLINK FOUND"
 		else
 			warn 60 "$2: SYMLINK MISSING"
 			info 60 "Creating symlink..."
-			ln -s "$1" "$2"
+			sudo ln -sv "$1" "$2"
 		fi
 
 	fi
@@ -445,6 +446,70 @@ save_vars(){
 
 }
 
+download_packages(){
+
+	local OIFS=$IFS
+
+	IFS=$NEWLINE
+
+	show_title -b
+
+
+	target_dir=$2
+
+	packages=$(<$1)
+	packages=($packages)
+
+	IFS=$OIFS
+
+	local i=1
+	len=${#packages[@]}
+
+
+	for pack in ${packages[@]}
+	do
+
+		IFS="/"
+		packname=($pack)
+		IFS=$OIFS
+
+		packname=${packname[$((${#packname[@]}-1))]}
+		info 70 "Downloading package:  ${BOLD}${ORANGE}$packname${DEFAULT} ${BOLD}${LBLUE}[$i/$len]${DEFAULT}"
+		wget -q -P "$target_dir/" $pack
+		info 70 "${BOLD}${GREEN}[DONE]${DEFAULT}"
+
+		i=$((i+1))
+
+	done
+
+}
+
+pkgdl(){
+
+
+
+	if [[ $#>1 ]]
+
+
+		if [[ $(test -d $2) == 1 ]]
+		
+			wget -q -P "$2/" "$1"
+		
+		else
+
+			errme 60 "Location $2 doesn't exist or is not a directory!"
+		fi
+
+	else
+
+
+		wget -q -P "$1"
+
+
+	fi
+
+}
+
 setup_lfs(){
 
 
@@ -458,7 +523,6 @@ setup_lfs(){
 	IFS=$NEWLINE
 
 	local vars=($config)
-
 
 	info 40 "Reading variables from config.txt"
 
@@ -561,10 +625,12 @@ setup_lfs(){
 	setup_directory "${LFS}/sources"
 	setup_directory "${LFS}/etc"
 	setup_directory "${LFS}/var"
-	setup_directory "${LFS}/bin"
-	setup_directory "${LFS}/sbin"
-	setup_directory "${LFS}/lib"
 	setup_directory "${LFS}/tools"
+	setup_directory "${LFS}/usr"
+	setup_directory "${LFS}/usr/bin"
+	setup_directory "${LFS}/usr/sbin"
+	setup_directory "${LFS}/usr/lib"
+	
 
 	case $(uname -m) in
   	
@@ -578,13 +644,38 @@ setup_lfs(){
 	
 	show_title -b
 	msg 80 "${BOLD}STEP II:${DEFAULT} Setting up limited directory structure:"
-	slink "usr/bin" "${LFS}/bin"
-	slink "usr/sbin" "${LFS}/sbin"
-	slink "usr/lib" "${LFS}/lib"
+	slink "/usr/bin" "${LFS}"
+	slink "/usr/sbin" "${LFS}"
+	slink "/usr/lib" "${LFS}"
 
 
 	ibreak -w "Symlinks configured! Press any key to continue..."
 
+	#Downloading packages
+	show_title -b
+	msg 80 "${BOLD}STEP III:${DEFAULT} Downloading packages..."
+
+	ibreak -i "Press any key to start download..."
+
+
+	IFS=$NEWLINE
+
+	packages=$(<"./wget-list-sysv")
+	packages=($packages)
+
+
+	for pack in ${packages[@]}
+	do
+
+		IFS="/"
+		packname=($pack)
+		IFS=$OIFS
+
+
+		info 70
+
+
+	done
 
 	##LAST STEP
 	#Unmounting per user choice
