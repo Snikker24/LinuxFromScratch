@@ -488,10 +488,10 @@ pkgdl(){
 
 
 
-	if [[ $#>1 ]]
+	if [[ $#>1 ]]; then
 
 
-		if [[ $(test -d $2) == 1 ]]
+		if test -d "$2"; then
 		
 			wget -q -P "$2/" "$1"
 		
@@ -503,7 +503,7 @@ pkgdl(){
 	else
 
 
-		wget -q -P "$1"
+		sudo wget -q -P "$1"
 
 
 	fi
@@ -651,6 +651,7 @@ setup_lfs(){
 
 	ibreak -w "Symlinks configured! Press any key to continue..."
 
+
 	#Downloading packages
 	show_title -b
 	msg 80 "${BOLD}STEP III:${DEFAULT} Downloading packages..."
@@ -660,22 +661,65 @@ setup_lfs(){
 
 	IFS=$NEWLINE
 
-	packages=$(<"./wget-list-sysv")
+	local packages=$(<"./wget-list-sysv")
 	packages=($packages)
 
+	
+	local pkcnt=${#packages[@]}
+	local pki=1
 
+	local pklog=""
 	for pack in ${packages[@]}
 	do
 
+		show_title -b
+		msg 80 "${BOLD}STEP III:${DEFAULT} Downloading packages..."
+
 		IFS="/"
-		packname=($pack)
+		local packname=($pack)
+		packname=${packname[$((${#packname[@]}-1))]}
 		IFS=$OIFS
+		
+		local prompt="Downloading package [$pki/$pkcnt]: $packname"
+
+		echo "$pklog"
+		info 70 "$prompt"
+		
+		res=$(pkgdl "$pack" "${LFS}/sources")
+		if [[ $res == "" ]]; then
+			res=$(echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}")
+		fi
+
+		pklog="$pklog${NEWLINE}$(info 70 "$prompt")${NEWLINE}$res"
 
 
-		info 70
+		show_title -b
+		msg 80 "${BOLD}STEP III:${DEFAULT} Downloading packages..."
+		echo -e "$pklog"
+		pki=$((pki+1))
 
 
 	done
+
+	msg 60 "Download complete!"
+	ibreak -i "Press any key to continue..."
+
+	##Creating lfs user
+
+
+	##Filesystem permissions
+	show_title -b
+	msg 80 "${BOLD}STEP V:${DEFAULT} Setting up file permissions:"
+
+	info 60 "Creating permissions for LFS directory structure:"
+	msg 60 "${LFS}"
+	chown root:root "${LFS}"
+	chmod 755 "${LFS}"
+
+	msg 60 "${LFS}/sources"
+	chmod -v a+wt "${LFS}/sources"
+	chown root:root "${LFS}/sources/*"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	##LAST STEP
 	#Unmounting per user choice
@@ -700,7 +744,7 @@ setup_lfs(){
 	done
 
 
-	if [[ $((ans==1)) ]]; then
+	if [[ $((ans==1)) == 1 ]]; then
 
 
 		local output=$(sudo umount -v $LFS_PART 2>&1)
@@ -709,9 +753,16 @@ setup_lfs(){
 		info 60 "$output. Exiting now..."
 		sleep 3
 
+	else
+
+		show_title -b
+		info 60 "Exiting now..."
+		sleep 3
+
 	fi
 
 	clear
+
 }
 
 setup_lfs
