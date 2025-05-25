@@ -684,10 +684,24 @@ setup_lfs(){
 
 		echo "$pklog"
 		info 70 "$prompt"
-		
-		res=$(pkgdl "$pack" "${LFS}/sources")
-		if [[ $res == "" ]]; then
-			res=$(echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}")
+
+		local res
+
+		if test -f "${LFS}/sources/$packname"; then
+
+			res=$(echo -e "${GREEN}${BOLD}[ALREADY EXISTS]${DEFAULT}")
+
+		else
+
+			res=$(pkgdl "$pack" "${LFS}/sources")
+
+
+			if [[ $res == "" ]]; then
+				
+				res=$(echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}")
+
+			fi
+
 		fi
 
 		pklog="$pklog${NEWLINE}$(info 70 "$prompt")${NEWLINE}$res"
@@ -706,8 +720,32 @@ setup_lfs(){
 
 	##Creating lfs user
 
+	show_title -b
+	msg 80 "${BOLD}STEP IV:${DEFAULT} Creating LFS user:"
+	warn 60 "You are about to create a new user profile with the name \"lfs\" (can be changed later via \"usermod -l <new_username>\" command)"
+	warn 60 "If you wish to change the name later don't forget to change the home directory as well using \"usermod -d <new_home> -m <new_username>\" command)"
+	ibreak -w "Press any key to continue..."
+
+	show_title -b
+	msg 80 "${BOLD}STEP IV:${DEFAULT} Creating LFS user:"
+	
+	info 60 "Creating user group: lfs"
+	sudo groupadd lfs
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	info 60 "Creating user: lfs"
+	sudo useradd -s "/bin/bash" -g "lfs" -m -k "/dev/null" lfs
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	info 60 "Please create a password for new user: lfs"
+	sudo passwd lfs
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	ibreak -i "Press any key to continue..."
+
 
 	##Filesystem permissions
+	
 	show_title -b
 	msg 80 "${BOLD}STEP V:${DEFAULT} Setting up file permissions:"
 
@@ -715,11 +753,79 @@ setup_lfs(){
 	msg 60 "${LFS}"
 	chown root:root "${LFS}"
 	chmod 755 "${LFS}"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	msg 60 "${LFS}/sources"
 	chmod -v a+wt "${LFS}/sources"
 	chown root:root "${LFS}/sources/*"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	msg 60 "${LFS}/usr"
+	chown -v lfs "${LFS}/usr"
+	chown -v lfs "${LFS}/usr/*"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+	
+	msg 60 "${LFS}/var"
+	chown -v lfs "${LFS}/var"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	msg 60 "${LFS}/etc"
+	chown -v lfs "${LFS}/etc"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+	
+	msg 60 "${LFS}/tools"
+	chown -v lfs "${LFS}/tools"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	### Changing users
+	show_title -b
+	warn 80 "From this point on all commands will be executed as user \"lfs\"."
+	ibreak -w "Press any key to continue..."
+	info 80 "Please login as user \"lfs\":"
+	su - lfs
+	ibreak -w "Press any key to continue..."
+
+
+	##LFS bash setup
+	
+	show_title -b
+	msg 80 "${BOLD}STEP VI:${DEFAULT} Setting up bash scripts for \"lfs\" user:"
+
+	info 70 "Creating bash profile in: \"$(echo $(eval "~/.bash_profile"))\""
+	cmdline="exec env -i HOME=$HOME TERM=$TERM PS1='\u:\w\\$ ' /bin/bash"
+	printf $cmdline > $(eval "~/.bash_profile")
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	info 70 "Creating \".bashrc\" in: \"$(echo $(eval "~/.bashrc"))\""
+
+	cores="$(nproc)"
+	if [ $cores = "" ]; then
+		cores=1
+	fi
+
+	local cmdline="set +h${NEWLINE}"
+	cmdline=$cmdline"umask 022${NEWLINE}"
+	cmdline=$cmdline"LFS=$LFS${NEWLINE}"
+	cmdline=$cmdline"LC_ALL=POSIX${NEWLINE}"
+	cmdline=$cmdline"LFS_TGT=$(uname -m)-lfs-linux-gnu${NEWLINE}"
+	cmdline=$cmdline"PATH=/usr/bin${NEWLINE}"
+	cmdline=$cmdline"if [ ! -L /bin ]; then PATH=/bin:\$PATH; fi${NEWLINE}"
+	cmdline=$cmdline"PATH=\$LFS/tools/bin:\$PATH${NEWLINE}"
+	cmdline=$cmdline"CONFIG_SITE=$LFS/usr/share/config.site${NEWLINE}"
+	cmdline=$cmdline"export LFS LC_ALL LFS_TGT PATH CONFIG_SITE${NEWLINE}"
+	cmdline=$cmdline"export MAKEFLAGS=-j$cores"
+
+	printf $cmdline > ~/.bashrc
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	show_title -b
+	msg 80 "${BOLD}STEP VI:${DEFAULT} Setting up bash scripts for \"lfs\" user:"
+
+	info 60 "Forcing bash to use .bash_profile"
+	source ~/.bash_profile
+
+	ibreak -i "Press any key to continue..."
+
 
 	##LAST STEP
 	#Unmounting per user choice
@@ -762,7 +868,6 @@ setup_lfs(){
 	fi
 
 	clear
-
 }
 
 setup_lfs
