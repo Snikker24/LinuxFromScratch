@@ -343,7 +343,7 @@ setup_directory(){
 		else
 			warn 60 "$1: NOT FOUND"
 			info 60 "Creating directory..."
-			mkdir -pv "$1"
+			sudo mkdir -pv "$1"
 		fi
 
 	fi
@@ -354,7 +354,7 @@ slink(){
 
 	if(($#>1)); then
 
-		if test -L "$2" || test -e "$2"; then
+		if test -L "$2" && test -d "$2"; then
 			info 60 "$2: SYMLINK FOUND"
 		else
 			warn 60 "$2: SYMLINK MISSING"
@@ -446,44 +446,6 @@ save_vars(){
 
 }
 
-download_packages(){
-
-	local OIFS=$IFS
-
-	IFS=$NEWLINE
-
-	show_title -b
-
-
-	target_dir=$2
-
-	packages=$(<$1)
-	packages=($packages)
-
-	IFS=$OIFS
-
-	local i=1
-	len=${#packages[@]}
-
-
-	for pack in ${packages[@]}
-	do
-
-		IFS="/"
-		packname=($pack)
-		IFS=$OIFS
-
-		packname=${packname[$((${#packname[@]}-1))]}
-		info 70 "Downloading package:  ${BOLD}${ORANGE}$packname${DEFAULT} ${BOLD}${LBLUE}[$i/$len]${DEFAULT}"
-		wget -q -P "$target_dir/" $pack
-		info 70 "${BOLD}${GREEN}[DONE]${DEFAULT}"
-
-		i=$((i+1))
-
-	done
-
-}
-
 pkgdl(){
 
 
@@ -493,7 +455,7 @@ pkgdl(){
 
 		if test -d "$2"; then
 		
-			wget -q -P "$2/" "$1"
+			sudo wget -q -P "$2/" "$1"
 		
 		else
 
@@ -779,10 +741,8 @@ setup_lfs(){
 
 	### Changing users
 	show_title -b
-	warn 80 "From this point on all commands will be executed as user \"lfs\"."
-	ibreak -w "Press any key to continue..."
-	info 80 "Please login as user \"lfs\":"
-	#su - lfs
+	msg 80 "${BOLD}STEP VI:${DEFAULT} Setting up bash scripts for \"lfs\" user:"
+	warn 80 "The followind step will be executed as user \"lfs\"."
 	ibreak -w "Press any key to continue..."
 
 
@@ -795,7 +755,7 @@ setup_lfs(){
 
 	info 70 "Creating bash profile in: $usr_home/.bash_profile"
 	cmdline="exec env -i HOME=$usr_home TERM=$TERM PS1='\u:\w\\$ ' /bin/bash"
-	sudo -u lfs -H bash -c "printf $cmdline > /\$HOME/.bash_profile"
+	sudo -u lfs bash -c "printf $cmdline > /$usr_home/.bash_profile"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	info 70 "Creating \".bashrc\" in: $usr_home/.bashrc"
@@ -817,14 +777,11 @@ setup_lfs(){
 	cmdline="$cmdline${NEWLINE}export LFS LC_ALL LFS_TGT PATH CONFIG_SITE"
 	cmdline="$cmdline${NEWLINE}export MAKEFLAGS=-j$cores"
 
-	printf "Here is the script:${NEWLINE}$cmdline"
-	sudo -u lfs -H bash -c "printf \"$cmdline\" > /$usr_home/.bashrc"
-	content=$(sudo -u lfs -H bash -c "cat /$usr_home/.bashrc")
-	echo $content
+	sudo -u lfs bash -c "printf \"$cmdline\" > /$usr_home/.bashrc"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	info 60 "Forcing bash to use .bash_profile"
-	sudo -u lfs -H bash -c "source /$usr_home/.bash_profile"
+	sudo -u lfs bash -c "source $usr_home/.bash_profile"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	ibreak -i "Press any key to continue..."
