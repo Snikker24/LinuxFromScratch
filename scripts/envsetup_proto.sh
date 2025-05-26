@@ -782,7 +782,7 @@ setup_lfs(){
 	warn 80 "From this point on all commands will be executed as user \"lfs\"."
 	ibreak -w "Press any key to continue..."
 	info 80 "Please login as user \"lfs\":"
-	su - lfs
+	#su - lfs
 	ibreak -w "Press any key to continue..."
 
 
@@ -791,38 +791,41 @@ setup_lfs(){
 	show_title -b
 	msg 80 "${BOLD}STEP VI:${DEFAULT} Setting up bash scripts for \"lfs\" user:"
 
-	info 70 "Creating bash profile in: \"$(echo $(eval "~/.bash_profile"))\""
-	cmdline="exec env -i HOME=$HOME TERM=$TERM PS1='\u:\w\\$ ' /bin/bash"
-	printf $cmdline > $(eval "~/.bash_profile")
+	usr_home="$(sudo -u lfs -H bash -c "echo \$HOME")"
+
+	info 70 "Creating bash profile in: $usr_home/.bash_profile"
+	cmdline="exec env -i HOME=$usr_home TERM=$TERM PS1='\u:\w\\$ ' /bin/bash"
+	sudo -u lfs -H bash -c "printf $cmdline > /\$HOME/.bash_profile"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
-	info 70 "Creating \".bashrc\" in: \"$(echo $(eval "~/.bashrc"))\""
+	info 70 "Creating \".bashrc\" in: $usr_home/.bashrc"
 
 	cores="$(nproc)"
 	if [ $cores = "" ]; then
 		cores=1
 	fi
 
-	local cmdline="set +h${NEWLINE}"
-	cmdline=$cmdline"umask 022${NEWLINE}"
-	cmdline=$cmdline"LFS=$LFS${NEWLINE}"
-	cmdline=$cmdline"LC_ALL=POSIX${NEWLINE}"
-	cmdline=$cmdline"LFS_TGT=$(uname -m)-lfs-linux-gnu${NEWLINE}"
-	cmdline=$cmdline"PATH=/usr/bin${NEWLINE}"
-	cmdline=$cmdline"if [ ! -L /bin ]; then PATH=/bin:\$PATH; fi${NEWLINE}"
-	cmdline=$cmdline"PATH=\$LFS/tools/bin:\$PATH${NEWLINE}"
-	cmdline=$cmdline"CONFIG_SITE=$LFS/usr/share/config.site${NEWLINE}"
-	cmdline=$cmdline"export LFS LC_ALL LFS_TGT PATH CONFIG_SITE${NEWLINE}"
-	cmdline=$cmdline"export MAKEFLAGS=-j$cores"
+	local cmdline="set +h$"
+	cmdline="$cmdline${NEWLINE}umask 022"
+	cmdline="$cmdline${NEWLINE}LFS=$LFS"
+	cmdline="$cmdline${NEWLINE}LC_ALL=POSIX"
+	cmdline="$cmdline${NEWLINE}LFS_TGT=$(uname -m)-lfs-linux-gnu"
+	cmdline="$cmdline${NEWLINE}PATH=/usr/bin"
+	cmdline="$cmdline${NEWLINE}if [ ! -L /bin ]; then PATH=/bin:\$PATH; fi"
+	cmdline="$cmdline${NEWLINE}PATH=\$LFS/tools/bin:\$PATH"
+	cmdline="$cmdline${NEWLINE}CONFIG_SITE=$LFS/usr/share/config.site"
+	cmdline="$cmdline${NEWLINE}export LFS LC_ALL LFS_TGT PATH CONFIG_SITE"
+	cmdline="$cmdline${NEWLINE}export MAKEFLAGS=-j$cores"
 
-	printf $cmdline > ~/.bashrc
+	printf "Here is the script:${NEWLINE}$cmdline"
+	sudo -u lfs -H bash -c "printf \"$cmdline\" > /$usr_home/.bashrc"
+	content=$(sudo -u lfs -H bash -c "cat /$usr_home/.bashrc")
+	echo $content
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
-	show_title -b
-	msg 80 "${BOLD}STEP VI:${DEFAULT} Setting up bash scripts for \"lfs\" user:"
-
 	info 60 "Forcing bash to use .bash_profile"
-	source ~/.bash_profile
+	sudo -u lfs -H bash -c "source /$usr_home/.bash_profile"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	ibreak -i "Press any key to continue..."
 
@@ -871,4 +874,3 @@ setup_lfs(){
 }
 
 setup_lfs
-
