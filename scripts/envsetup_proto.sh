@@ -33,7 +33,7 @@ show_title(){
 
 	clear
 
-	echo -e "${LBLUE}${BOLD}"
+	echo -e "${LBLUEBG}${BOLD}"
 	
 	
 	echo -e "╔════════════════════════════════════╗"
@@ -175,27 +175,54 @@ squash(){
 
 	IFS=" ${NEWLINE}"
 	local words=($2)
+	IFS=""
 
-	local x=0
+	local x=1
 	local m=$1
 	
-
+	local txt=""
 	#echo -en "${YELLOW}${BOLD}[WARNING]${DEFAULT}"
 	
 	for i in ${words[@]}
 	do
 
 
+		local sep=$(echo -en $i | sed -e 's/\x1b\[[0-9;]*m//g')
+
+		#IFS="$sep"
+		#local splice=($i)
+		#IFS=" ${NEWLINE}"
+
+		#case "${#splice[@]}"
+
+		#	"0")
+			
+			
+		#	;;
+
+		#esac
+
+
 		if [[ $((count+${#i}+1 < m*x)) == 1 ]] ; then
 
-			echo -en " $i"
+			if [[ $txt == "" ]]; then
 
-			count=$((count+1+${#i}))
+				txt="$txt$i"
+				count=$((count+${#i}))
+
+			else
+
+				txt="$txt $i"
+				count=$((count+1+${#sep}))
+			
+			fi
+
+			
+
 
 		else
 
-			#echo -en "${NEWLINE}${YELLOW}${BOLD}[#]${DEFAULT} "
-			echo -en "${NEWLINE}$i"
+			txt="$txt${DEFAULT}${NEWLINE}$i"
 
 			#while [[ $(( count < m*x )) == 1 ]]; do
 
@@ -205,16 +232,20 @@ squash(){
 			#done
 
 
-			count=$((count+${#i}))
+			count=$((count+${#sep}))
 			x=$((x+1))
-			m=$((m*x))
+			#m=$((m*x))
+
+			#txt="$txt($m|$x|$((m*x))|$count)"
 
 		fi
 
 
 	done
 
-	echo -en "${NEWLINE}"
+	txt="$txt${NEWLINE}"
+
+	echo -e $txt
 
 	IFS=$OIFS
 
@@ -228,7 +259,7 @@ warn(){
 	local lines=($(squash $1 $2))
 	
 
-	echo -e "${YELLOW}${BOLD}[WARNING]${DEFAULT}"
+	echo -e "${DEFAULT}${YELLOW}${BOLD}[WARNING]${DEFAULT}"
 	
 	for i in ${lines[@]}
 	do
@@ -249,7 +280,7 @@ errme(){
 	local lines=($(squash $1 $2))
 	
 
-	echo -e "${RED}${BOLD}[ERROR]${DEFAULT}"
+	echo -e "${DEFAULT}${RED}${BOLD}[ERROR]${DEFAULT}"
 	
 	for i in ${lines[@]}
 	do
@@ -270,7 +301,7 @@ info(){
 	local lines=($(squash $1 $2))
 	
 
-	echo -e "${LBLUE}${BOLD}[INFO]${DEFAULT}"
+	echo -e "${DEFAULT}${LBLUE}${BOLD}[INFO]${DEFAULT}"
 	
 	for i in ${lines[@]}
 	do
@@ -642,10 +673,9 @@ setup_lfs(){
 		packname=${packname[$((${#packname[@]}-1))]}
 		IFS=$OIFS
 		
-		local prompt="Downloading package [$pki/$pkcnt]: $packname"
 
-		echo "$pklog"
-		info 70 "$prompt"
+		pklog=$(info 70 "Downloading package [$pki/$pkcnt]: $packname")
+		echo -e "$pklog"
 
 		local res
 
@@ -666,7 +696,7 @@ setup_lfs(){
 
 		fi
 
-		pklog="$pklog${NEWLINE}$(info 70 "$prompt")${NEWLINE}$res"
+		pklog="$pklog${NEWLINE}$res"
 
 
 		show_title -b
@@ -677,6 +707,7 @@ setup_lfs(){
 
 	done
 
+	show_title -b
 	msg 60 "Download complete!"
 	ibreak -i "Press any key to continue..."
 
@@ -684,24 +715,38 @@ setup_lfs(){
 
 	show_title -b
 	msg 80 "${BOLD}STEP IV:${DEFAULT} Creating LFS user:"
-	warn 60 "You are about to create a new user profile with the name \"lfs\" (can be changed later via \"usermod -l <new_username>\" command)"
-	warn 60 "If you wish to change the name later don't forget to change the home directory as well using \"usermod -d <new_home> -m <new_username>\" command)"
-	ibreak -w "Press any key to continue..."
+	info 60 "You are about to create a new user profile with the name \"lfs\" (can be changed later via \"usermod -l <new_username>\" command)"
+	info 60 "If you wish to change the name later don't forget to change the home directory as well using \"usermod -d <new_home> -m <new_username>\" command)"
+	ibreak -m "Press any key to continue..."
 
 	show_title -b
 	msg 80 "${BOLD}STEP IV:${DEFAULT} Creating LFS user:"
 	
-	info 60 "Creating user group: lfs"
-	sudo groupadd lfs
-	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+	local usr=$(grep "lfs" "/etc/passwd")
 
-	info 60 "Creating user: lfs"
-	sudo useradd -s "/bin/bash" -g "lfs" -m -k "/dev/null" lfs
-	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
-	info 60 "Please create a password for new user: lfs"
-	sudo passwd lfs
-	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	if [[ $usr == "" ]]; then
+
+		info 60 "Creating user group: lfs"
+		sudo groupadd lfs
+		echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+		info 60 "Creating user: lfs"
+		sudo useradd -s "/bin/bash" -g "lfs" -m -k "/dev/null" lfs
+		echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+		info 60 "Please create a password for new user: lfs"
+		sudo passwd lfs
+		echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	else
+		info 60 "User with the name \"lfs\" found, please rename it..."
+		warn 60 "Seems that a user with the name \"lfs\" already exists. If this profile is not meant to be used with LinuxFromScratch please ${LBLUEBG}give ${LBLUEBG}it ${LBLUEBG}another ${LBLUEBG}name${DEFAULT} or ${REDBG}QUIT ${REDBG}NOW!${DEFAULT} Otherwise continue with the given instructions."
+
+
+
+	fi
 
 	ibreak -i "Press any key to continue..."
 
@@ -754,8 +799,11 @@ setup_lfs(){
 	usr_home="$(sudo -u lfs -H bash -c "echo \$HOME")"
 
 	info 70 "Creating bash profile in: $usr_home/.bash_profile"
-	cmdline="exec env -i HOME=$usr_home TERM=$TERM PS1='\u:\w\\$ ' /bin/bash"
-	sudo -u lfs bash -c "printf $cmdline > /$usr_home/.bash_profile"
+	cmdline="exec env -i HOME=\$HOME TERM=$TERM PS1='\u@\h:[\W]\\$ ' /bin/bash"
+
+	echo "Here is cmdline:$NEWLINE$cmdline"
+
+	sudo -u lfs bash -c "printf \"$cmdline\" > /$usr_home/.bash_profile"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	info 70 "Creating \".bashrc\" in: $usr_home/.bashrc"
@@ -765,7 +813,7 @@ setup_lfs(){
 		cores=1
 	fi
 
-	local cmdline="set +h$"
+	local cmdline="set +h"
 	cmdline="$cmdline${NEWLINE}umask 022"
 	cmdline="$cmdline${NEWLINE}LFS=$LFS"
 	cmdline="$cmdline${NEWLINE}LC_ALL=POSIX"
@@ -781,7 +829,7 @@ setup_lfs(){
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	info 60 "Forcing bash to use .bash_profile"
-	sudo -u lfs bash -c "source $usr_home/.bash_profile"
+	sudo -u lfs bash -c "source $usr_home/.bash_profile & exit"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	ibreak -i "Press any key to continue..."
@@ -817,15 +865,15 @@ setup_lfs(){
 
 		show_title -b
 		info 60 "$output. Exiting now..."
-		sleep 3
 
 	else
 
 		show_title -b
 		info 60 "Exiting now..."
-		sleep 3
 
 	fi
+
+	sleep 1.25
 
 	clear
 }
