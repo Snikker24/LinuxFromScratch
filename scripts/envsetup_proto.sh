@@ -800,11 +800,9 @@ setup_lfs(){
 	usr_home="$(sudo -u lfs -H bash -c "echo \$HOME")"
 
 	info 70 "Creating bash profile in: $usr_home/.bash_profile"
-	cmdline="exec env -i HOME=\$HOME TERM=$TERM PS1='\u@\h:[\W]\\$ ' /bin/bash"
+	cmdline="exec env -i HOME=\$HOME TERM=\$TERM PS1='\u@\\h:[\W]\\\$' /bin/bash"
 
-	echo "Here is cmdline:$NEWLINE$cmdline"
-
-	sudo -u lfs bash -c "printf \"$cmdline\" > /$usr_home/.bash_profile"
+	sudo -u lfs bash -c "printf %s \"$cmdline\" > /$usr_home/.bash_profile"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	info 70 "Creating \".bashrc\" in: $usr_home/.bashrc"
@@ -822,11 +820,11 @@ setup_lfs(){
 	cmdline="$cmdline${NEWLINE}PATH=/usr/bin"
 	cmdline="$cmdline${NEWLINE}if [ ! -L /bin ]; then PATH=/bin:\$PATH; fi"
 	cmdline="$cmdline${NEWLINE}PATH=\$LFS/tools/bin:\$PATH"
-	cmdline="$cmdline${NEWLINE}CONFIG_SITE=$LFS/usr/share/config.site"
+	cmdline="$cmdline${NEWLINE}CONFIG_SITE=\$LFS/usr/share/config.site"
 	cmdline="$cmdline${NEWLINE}export LFS LC_ALL LFS_TGT PATH CONFIG_SITE"
 	cmdline="$cmdline${NEWLINE}export MAKEFLAGS=-j$cores"
 
-	sudo -u lfs bash -c "printf \"$cmdline\" > /$usr_home/.bashrc"
+	sudo -u lfs bash -c "printf %s \"$cmdline\" > /$usr_home/.bashrc"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	info 60 "Forcing bash to use .bash_profile"
@@ -834,7 +832,6 @@ setup_lfs(){
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
 	ibreak -i "Press any key to continue..."
-
 
 	##LAST STEP
 	#Unmounting per user choice
@@ -858,9 +855,7 @@ setup_lfs(){
 
 	done
 
-
 	if [[ $((ans==1)) == 1 ]]; then
-
 
 		local output=$(sudo umount -v $LFS_PART 2>&1)
 
