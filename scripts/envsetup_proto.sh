@@ -637,9 +637,9 @@ setup_lfs(){
 	
 	show_title -b
 	msg 80 "${BOLD}STEP II:${DEFAULT} Setting up limited directory structure:"
-	slink "/usr/bin" "${LFS}"
-	slink "/usr/sbin" "${LFS}"
-	slink "/usr/lib" "${LFS}"
+	slink "/usr/bin" "${LFS}/bin"
+	slink "/usr/sbin" "${LFS}/sbin"
+	slink "/usr/lib" "${LFS}/lib"
 
 
 	ibreak -w "Symlinks configured! Press any key to continue..."
@@ -758,32 +758,36 @@ setup_lfs(){
 	msg 80 "${BOLD}STEP V:${DEFAULT} Setting up file permissions:"
 
 	info 60 "Creating permissions for LFS directory structure:"
-	msg 60 "${LFS}"
-	chown root:root "${LFS}"
-	chmod 755 "${LFS}"
+	msg 60 "Handing ownership over LFS directory to root and setting permissions."
+	info 60 "$(sudo chown root:root "${LFS}")"
+	info 60 "$(sudo chmod 755 "${LFS}")"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
-	msg 60 "${LFS}/sources"
-	chmod -v a+wt "${LFS}/sources"
-	chown root:root "${LFS}/sources/*"
+	msg 60 "Handing ownership over source directory to root."
+	info 60 "$(sudo chmod -v a+wt "${LFS}/sources")"
+	info 60 "$(sudo chown root:root "${LFS}/sources/*")"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
-	msg 60 "${LFS}/usr"
-	chown -v lfs "${LFS}/usr"
-	chown -v lfs "${LFS}/usr/*"
-	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+	msg 60 "Running CHOWN for user \"lfs\" in the limited directory..."
+
+	info 60 "$(sudo chown -v lfs "${LFS}/usr")"
+
+	#info 60 "$(sudo chown -v lfs "${LFS}/usr/*")"
+
+	info 60 "$(sudo chown -v lfs "${LFS}/var")"
+
+	info 60 "$(sudo chown -v lfs "${LFS}/etc")"
+
+	info 60 "$(sudo chown -v lfs "${LFS}/tools")"
+
+	case $(uname -m) in
+  		x86_64) info 60 "$( sudo chown -v lfs "$LFS/lib64")" ;;
+	esac
 	
-	msg 60 "${LFS}/var"
-	chown -v lfs "${LFS}/var"
 	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
 
-	msg 60 "${LFS}/etc"
-	chown -v lfs "${LFS}/etc"
-	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
-	
-	msg 60 "${LFS}/tools"
-	chown -v lfs "${LFS}/tools"
-	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	ibreak -m "Press any key to continue..."
 
 	### Changing users
 	show_title -b
