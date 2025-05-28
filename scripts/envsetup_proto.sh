@@ -702,6 +702,7 @@ setup_lfs(){
 		show_title -b
 		msg 80 "${BOLD}STEP III:${DEFAULT} Downloading packages..."
 		echo -e "$pklog"
+		sleep 0.01
 		pki=$((pki+1))
 
 
