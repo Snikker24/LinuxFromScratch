@@ -1,8 +1,5 @@
+#!bin/bash
 
-#!/bin/bash
-
-
-clear
 #Variables
 
 RED='\033[0;31m'
@@ -13,8 +10,11 @@ LBLUE='\033[0;94m'
 GREEN='\033[0;32m'
 BLACK='\033[0;30m'
 
-LREDBG='\033[30;41m'
+REDBG='\033[30;41m'
 GREENBG='\033[30;42m'
+LBLUEBG='\e[30;104m'
+YELLOWBG='\033[30;103m'
+
 
 DEFAULT='\033[0m'
 BOLD='\033[1m'
@@ -23,327 +23,344 @@ BLINK='\e[5m'
 
 NEWLINE=$'\n'
 
-#Title
-display_title(){
-	echo -e "${LBLUE}${BOLD}"
-	echo '╔══════════════════════════════════════════════════════════════════════════════════╗'
-	echo '║   __ _                    ___                    __                _       _     ║'
-	echo '║  / /(_)_ __  _   ___  __ / __\ __ ___  _ __ ___ / _\ ___ _ __ __ _| |_ ___| |__  ║'
-	echo "║ / / | | '_ \| | | \ \/ // _\| '__/ _ \| '_ \` _ \\\\ \ / __| '__/ _\` | __/ __| '_ \ ║"
-	echo '║/ /__| | | | | |_| |>  </ /  | | | (_) | | | | | |\ \ (__| | | (_| | || (__| | | |║'
-	echo '║\____/_|_| |_|\__,_/_/\_\/   |_|  \___/|_| |_| |_\__/\___|_|  \__,_|\__\___|_| |_|║'
-	echo '╚══════════════════════════════════════════════════════════════════════════════════╝'
+PROGRESS=0
+
+STEPS=5
+
+#Functions
+
+show_title(){
+
+	clear
+
+	echo -e "${LBLUEBG}${BOLD}"
+	
+	
+	echo -e "╔════════════════════════════════════╗"
+	echo -e "║ _     _                            ║"
+	echo -e "║| |   (_)_ __  _   ___  __          ║"
+	echo -e "║| |   | | '_ \| | | \ \/ /          ║"
+	echo -e "║| |___| | | | | |_| |>  <           ║"
+	echo -e "║|_____|_|_| |_|\__,_/_/\_\          ║"
+	echo -e "║|  ___| __ ___  _ __ ___            ║"
+	echo -e "║| |_ | '__/ _ \| '_ \` _ \           ║"
+	echo -e "║|  _|| | | (_) | | | | | |          ║"
+	echo -e "║|_|__|_|  \___/|_| |_|_|_|    _     ║"
+	echo -e "║/ ___|  ___ _ __ __ _| |_ ___| |__  ║"
+	echo -e "║\___ \ / __| '__/ _\` | __/ __| '_ \ ║"
+	echo -e "║ ___) | (__| | | (_| | || (__| | | |║"
+	echo -e "║|____/ \___|_|  \__,_|\__\___|_| |_|║"
+	echo -e "╚════════════════════════════════════╝"
+
 	echo -e "${GREEN}${BOLD}> LinuxFromScratch setup utility script${DEFAULT}${NEWLINE}"
+
+
+	if [[ (($#>0)) && $1=="-b" ]]; then
+		percentage_bar $PROGRESS 60
+	fi
 }
 
 
-#Function declaration
+show_part_table(){
 
-
-input_break(){
-	echo -e "${NEWLINE}${GREENBG}${BLACk}${BOLD}Press any key to continue:${DEFAULT}"
-	read -n 1 -s -r
-}
-
-mount_root_part(){
-
-	local raw=$( lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT)
-
-
-	local OIFS= $IFS
+	local OIFS=$IFS
 	IFS=$NEWLINE
 
-	local pttype=($(lsblk -o SIZE,PARTTYPENAME))
+	local devices=($( lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT))
+	local pttype=($(lsblk -o PARTN,PARTTYPENAME))
 
-	local z=0;
+	local k=0
+
 	for i in ${pttype[@]}
 	do
 		#pttype[$z]=${pttype[$z]:1}
-		pttype[$z]=${i//[^[:ascii:][:space:]]/}
-		pttype[$z]=${pttype[$z]:6}
-		z=$((z+1))
+		pttype[$k]=${i//[^[:ascii:][:space:]]/}
+		pttype[$k]=${pttype[$k]:6}
+		k=$((k+1))
 	done
 
-	local devlist=($raw)
+	k=0
+	local devstr=""
 
-	IFS=' ';
-
-	local devstr=''
+	local z=0
 
 
-	local k=0;
-	local device
-	z=0
-	for i in "${devlist[@]}"
+	IFS=' '
+
+	for device in "${devices[@]}"
 	do
 		#echo $i;
 
-		read -a device <<< $i
+		#device=($device)
+		read -a device <<< $device
 
 
 		#device[0]=$( echo ${device[0]} | sed "s/\W*//" )
 		device[0]=${device[0]//[^[:alnum:]]/}
 
 
-		#echo ${device[0]}
-		#echo ${device[1]}
-		#echo ${device[2]}
+		if [[ ${pttype[$k]} != '' && ${pttype[$k]} != "EFI System" && ${pttype[$k]} != "Linux swap" && ${device[2]} != "" ]]; then
 
-		#echo $z${pttype[$z]}
-
-		
-		if [[ ${device[3]} != '[SWAP]' && ${device[2]} != "" ]]; then
-		
-			if (( k!=0 )); then
-
-				#if ((k<=${#devlist[@]}/3));then
-					devstr="${devstr}${LBLUE}${BOLD}${k}${DEFAULT}	${device[0]}	${device[1]}	${device[2]}	${pttype[$z]}		${device[3]}${NEWLINE}"
-				#else
-					#devstr="${devstr}${k} ${device[0]} ${device[1]} ${device[2]}"
-				#fi
+			if (( $k != 0 )); then
+				
+				devstr="${devstr}${LBLUE}${BOLD}${z}${DEFAULT}	${device[0]}	${device[1]}	${device[2]}	${pttype[$k]}	${device[3]}	${NEWLINE}"
 
 			else
-				devstr="${GREEN}${BOLD}${devstr}ID	${device[0]}	${device[1]}	${device[2]}	PARTITION-TYPE		${device[3]}${DEFAULT}${NEWLINE}"
-				
+
+				devstr="${devstr}${GREEN}${BOLD}${devstr}ID	${device[0]}	${device[1]}	${device[2]}	PARTITION-TYPE		${device[3]}	${DEFAULT}${NEWLINE}"
+			
+			fi
+			z=$((z+1))
+		fi
+
+		k=$((k+1))
+
+	done
+
+
+	IFS=$OIFS
+	
+	echo -e "$devstr"
+
+
+}
+
+ibreak(){
+
+	local color=$GREENBG
+
+	if [[ (($#>0)) ]]; then
+		
+		if [[ (($#>1)) ]]; then
+
+			case $1 in
+
+				"-e")
+					color=$REDBG
+					;;
+
+				"-i")
+					color=$LBLUEBG
+					;;
+
+				"-w")
+					color=$YELLOWBG
+					;;
+
+
+			esac
+
+			echo -e "${NEWLINE}${color}${BOLD}$2${DEFAULT}"
+
+		else
+
+			echo -e "${NEWLINE}${color}${BOLD}$1${DEFAULT}"
+
+		fi
+
+		read -n 1 -s -r
+
+	fi
+}
+
+squash(){
+
+	local OIFS=$IFS
+	
+	local size=$2
+	size=${size//[^[:alnum:]]/}
+	size=${#size}
+
+	local count=0
+
+	IFS=" ${NEWLINE}"
+	local words=($2)
+	IFS=""
+
+	local x=1
+	local m=$1
+	
+	local txt=""
+	#echo -en "${YELLOW}${BOLD}[WARNING]${DEFAULT}"
+	
+	for i in ${words[@]}
+	do
+
+
+		local sep=$(echo -en $i | sed -e 's/\x1b\[[0-9;]*m//g')
+
+		#IFS="$sep"
+		#local splice=($i)
+		#IFS=" ${NEWLINE}"
+
+		#case "${#splice[@]}"
+
+		#	"0")
+			
+			
+		#	;;
+
+		#esac
+
+
+		if [[ $((count+${#i}+1 < m*x)) == 1 ]] ; then
+
+			if [[ $txt == "" ]]; then
+
+				txt="$txt$i"
+				count=$((count+${#i}))
+
+			else
+
+				txt="$txt $i"
+				count=$((count+1+${#sep}))
+			
 			fi
 
-			k=$((k+1));
+			
+
+
+		else
+
+			txt="$txt${DEFAULT}${NEWLINE}$i"
+
+			#while [[ $(( count < m*x )) == 1 ]]; do
+
+				#echo -en " "
+				#count=$((count+1))
+
+			#done
+
+
+			count=$((count+${#sep}))
+			x=$((x+1))
+			#m=$((m*x))
+
+			#txt="$txt($m|$x|$((m*x))|$count)"
+
 		fi
-		z=$((z+1))
+
 
 	done
 
-	k=$((k-1));
-	devstr="${devstr}${NEWLINE}${ORANGE}${BOLD}0 Cancel (CTRL+C)${DEFAULT} ${NEWLINE}"
+	txt="$txt${NEWLINE}"
 
-	if [[ $k>0 ]]; then
-
-		echo -e "${NEWLINE}${YELLOW}${BOLD}WARNING:${DEFAULT} Be careful! Choosing the wrong partition for LinuxFromScratch can break your system!"
-		echo -e "${YELLOW}${BOLD}WARNING:${DEFAULT} Avoid using the host OS partitions (ROOT, BOOT, SWAP, EFI, HOME, ...) as the main root partition."$NEWLINE
-		echo -e "${LBLUE}${BOLD}INFO:${DEFAULT} suitable partitions found: $k"$NEWLINE
-		echo -e $devstr
-		#echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Enter partition ID to mount:"
-		
-		read -p "$(echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Enter partition ID to mount:")" id
-
-		while [[ !$id=~'^[0-9]+$' && $id<0  || $id>$k ]]; do
-
-			echo -e "${RED}${BOLD}ERROR:${DEFAULT} Not a valid partition ID! Try again..."
-			#echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Enter partition ID to mount:"
-			read -p "$(echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Enter partition ID to mount:")" id
-
-		done
-
-
-		if (($id==0)); then
-			IFS=$OIFS
-			echo -e "${LBLUE}${BOLD}INFO:${DEFAULT} Operation cancelled. Exiting..."
-			exit
-		else
-
-			IFS=$NEWLINE
-
-			devlist=($devstr)
-
-			IFS="	"
-
-			read -a device <<< ${devlist[$id]}
-
-			echo -e "${LBLUE}${BOLD}INFO:${DEFAULT} Partition $id (/dev/${device[1]} | ${device[2]} | ${device[3]})) has been selected. Mounting..."
-
-			LFS_MOUNT="/dev/${device[1]}"
-			LFS_FS=${device[3]}
-
-			sudo mount -v -t $LFS_FS $LFS_MOUNT $LFS
-
-
-		fi
-
-	else
-
-		echo -e "${RED}${BOLD}ERROR:${DEFAULT} No suitable partitions found!"
-		echo -e "${RED}${BOLD}ERROR:${DEFAULT} Please create a new partition and run the script again."
-		echo -e "${RED}${BOLD}ERROR:${DEFAULT} Exiting..."
-		exit
-	fi
+	echo -e $txt
 
 	IFS=$OIFS
 
 }
 
-download_packages(){
+warn(){
+
 
 	local OIFS=$IFS
+	IFS="${NEWLINE}"
+	local lines=($(squash $1 $2))
+	
 
-	IFS=$NEWLINE
-
-
-	target_dir=$2
-
-	packages=$(<$1)
-	packages=($packages)
-
-	IFS=$OIFS
-
-	local i=1
-	len=${#packages[@]}
-	for pack in ${packages[@]}
+	echo -e "${DEFAULT}${YELLOW}${BOLD}[WARNING]${DEFAULT}"
+	
+	for i in ${lines[@]}
 	do
 
-		IFS="/"
-		packname=($pack)
-		IFS=$OIFS
-
-		packname=${packname[$((${#packname[@]}-1))]}
-		echo -en "${GREEN}${BOLD}Downloading package: ${ORANGE} $packname [$i/$len]${DEFAULT}"
-		wget -q -P "$target_dir/" $pack
-		echo -e " ${LBLUE}${BOLD}DONE${DEFAULT}"
-
-		i=$((i+1))
+		echo -e "${YELLOW}${BOLD}[#]${DEFAULT} $i"
 
 	done
 
+	IFS=$OIFS
 
 }
 
-setup_lfs(){
+errme(){
 
-	display_title
-	input_break
 
-	local config=$(<config.txt)
-	
 	local OIFS=$IFS
-	IFS=$NEWLINE
-
-	local vars
-	vars=($config)
-
-	IFS="="
-
-	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Generating variables from config.txt"
+	IFS="${NEWLINE}"
+	local lines=($(squash $1 $2))
 	
-	for var in "${vars[@]}"
+
+	echo -e "${DEFAULT}${RED}${BOLD}[ERROR]${DEFAULT}"
+	
+	for i in ${lines[@]}
 	do
-	
-		local varmap
-		read -a varmap <<< $var
-	
-		case ${varmap[0]} in 
-		
-			"LFS_HOME")
 
-				LFS_HOME=${varmap[1]}
-				LFS="$(eval "echo \"$LFS_HOME\"")/mnt/lfs"
-				echo -e "${GREEN}${BOLD}[${varmap[0]}]${DEFAULT} $(eval "echo \"$LFS_HOME\"")"
-				echo -e "${GREEN}${BOLD}[LFS]${DEFAULT} $LFS"
-				;;
-
-			"LFS_MOUNT")
-
-				LFS_MOUNT=${varmap[1]}
-				echo -e "${GREEN}${BOLD}[${varmap[0]}]${DEFAULT} $(eval "echo \"$LFS_MOUNT\"")"
-				;;
-
-			"LFS_FS")
-
-				LFS_FS=${varmap[1]}
-				echo -e "${GREEN}${BOLD}[${varmap[0]}]${DEFAULT} $(eval "echo \"$LFS_FS\"")"
-				;;
-
-		esac
+		echo -e "${RED}${BOLD}[#]${DEFAULT} $i"
 
 	done
 
 	IFS=$OIFS
 
-	echo -e "${NEWLINE}${YELLOW}${BOLD}WARNING:${DEFAULT} Check that the settings are corresponding to your desired configuration before continuing."
+}
 
-	input_break
-
-	umask 022
-
-	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Checking LFS home structure..."
-
-	setup_directory "$(eval "echo \"$LFS_HOME\"")"
-	setup_directory "$(eval "echo \"$LFS_HOME\"")/mnt"
-	setup_directory "${LFS}"
-
-	if [[ -z $LFS_HOME ]]; then
-
-		LFS_HOME="\$HOME/Desktop/LFS"
-		LFS="$(eval "echo \"$LFS_MOUNT\"")/mnt/lfs"
-
-		echo "LFS_HOME=${LFS_HOME}">>config.txt
-
-	fi
-
-	export LFS_HOME
-	export LFS
-
-	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Mounting root partition."
-
-	if [[ -z $LFS_MOUNT || -z $LFS_FS ]]; then
+info(){
 
 
-		echo -e "${NEWLINE}${LREDBG}${BOLD}Could not find root partition in config.txt${DEFAULT}"
-		echo -e "${LREDBG}${BOLD}You must specify a root partition for LFS.${DEFAULT}"
+	local OIFS=$IFS
+	IFS="${NEWLINE}"
+	local lines=($(squash $1 $2))
+	
 
-		input_break
+	echo -e "${DEFAULT}${LBLUE}${BOLD}[INFO]${DEFAULT}"
+	
+	for i in ${lines[@]}
+	do
 
-		mount_root_part
+		echo -e "${LBLUE}${BOLD}[#]${DEFAULT} $i"
 
-		echo "LFS_HOME=${LFS_HOME}" > config.txt
-		echo "LFS_MOUNT=${LFS_MOUNT}" >> config.txt
-		echo "LFS_FS=${LFS_FS}" >> config.txt
+	done
+
+	IFS=$OIFS
+
+}
+
+msg(){
 
 
-	else
+	local OIFS=$IFS
+	IFS="${NEWLINE}"
+	local lines=($(squash $1 $2))
+	
+
+	echo -e "${GREEN}${BOLD}[MESSAGE]${DEFAULT}"
+	
+	for i in ${lines[@]}
+	do
+
+		echo -e "${GREEN}${BOLD}[#]${DEFAULT} $i"
+
+	done
+
+	IFS=$OIFS
+
+}
 
 
+percentage_bar(){
 
-		FS="$(eval "echo \"$LFS_FS\"")"
-		MOUNT="$(eval "echo \"$LFS_MOUNT\"")"
+	local percent=$1
+	local len=$2
 
-		echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Found root partition ${MOUNT} (${FS}) from config.txt."
+	echo -en "[${GREEN}${BOLD}"
 
-		read -n 1 -s -r -p "$(echo -e "${NEWLINE}${YELLOW}${BOLD}[!]${DEFAULT} Do you wish to use this partition?${NEWLINE}1. YES${NEWLINE}0. NO${NEWLINE} ${NEWLINE}")" input
+	fill=$((percent*len/100))
 
-		while [[ $input != "0" && $input != "1" ]]; do
-			echo -e "${NEWLINE}${RED}${BOLD}ERROR:${DEFAULT} Not a valid answer!"
-			read -n 1 -s -r -p "$(echo -e "${NEWLINE}${YELLOW}${BOLD}[!]${DEFAULT} Do you wish to use this partition?${NEWLINE}1. YES${NEWLINE}0. NO${NEWLINE} ${NEWLINE}")" input
+	for ((i=1; i<=len; i++))
+	do
 
-		done
+		if [[ $((i <= fill)) == 1 ]]; then
 
-		if (( $input==1 )); then
-			sudo mount -v -t $FS $MOUNT $LFS
+			echo -en "■"
 
 		else
-			mount_root_part
+
+			echo -en "□"
 
 		fi
 
-	fi
+	done
 
-	export LFS_MOUNT
-	export LFS_FS
-	
-
-	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Checking directory structure."
-	setup_directory "${LFS}/sources"
-
-	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Setting up directory permissions."
-	#sudo chown root:root $LFS
-	sudo chmod 755 $LFS
-	sudo chmod -v a+wt $LFS/sources
-
-	input_break
-
-	echo -e "${NEWLINE}${LBLUE}${BOLD}INFO:${DEFAULT} Downloading packages..."
-	download_packages "./wget-list-sysv" "$LFS/sources"
-
-	#sudo chown root:root $LFS/sources/
-
+	echo -en "${DEFAULT}]${percent}%${NEWLINE}"
 
 
 }
@@ -353,15 +370,512 @@ setup_directory(){
 	if(($#>0)); then
 
 		if test -d $1; then
-			echo -e "$1	${GREEN}${BOLD}[OK]${DEFAULT}"
+			info 60 "$1: OK"
 		else
-			echo -e "$1	${YELLOW}${BOLD}[NOT FOUND]${DEFAULT}"
-			echo -e "${LBLUE}${BOLD}[Creating directory...]${DEFAULT}"
-			mkdir -pv "$1"
+			warn 60 "$1: NOT FOUND"
+			info 60 "Creating directory..."
+			sudo mkdir -pv "$1"
 		fi
 
 	fi
 
+}
+
+slink(){
+
+	if(($#>1)); then
+
+		if test -L "$2" && test -d "$2"; then
+			info 60 "$2: SYMLINK FOUND"
+		else
+			warn 60 "$2: SYMLINK MISSING"
+			info 60 "Creating symlink..."
+			sudo ln -sv "$1" "$2"
+		fi
+
+	fi
+
+}
+
+
+#Root partition select+mount
+
+select_root_part(){
+
+	show_title -b
+
+	local pstr="$(show_part_table)"
+
+	local partitions
+
+	local OIFS=$IFS	
+
+	IFS="${NEWLINE}"
+
+	partitions=($pstr)
+
+	count=${#partitions[@]}
+
+	IFS=$OIFS
+
+	warn 60 "Be careful when choosing root partition! Avoid using host OS partitions as it can break your system!"
+	
+	info 40 "Suitable devices found: $((count-1))"
+
+	echo -e "$pstr"
+
+	local id
+	read -p "$(echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Please enter root partition ID:")" id
+	echo ""
+
+
+	while [[ !$id=~'^[0-9]+$' && $id > $((count-1)) || $id <1 ]]; do
+
+		show_title -b
+		warn 40 "Be careful when choosing root partition! Avoid using host OS partitions as it can break your system!"
+
+		info 40 "Suitable devices found: $((count-1))"
+		echo -e "$pstr"
+
+		errme 60 "Not a valid partition! Try again..."
+		read  -p "$(echo -e "${YELLOW}${BOLD}[!]${DEFAULT} Please enter root partition ID:")" id
+		echo ""
+
+	done
+
+
+	IFS="	"
+
+	attr=(${partitions[$id]})
+
+	show_title -b
+	#echo -e "$pstr"
+
+	info 40 "Partition /dev/${attr[1]} (${attr[2]} - ${attr[3]}) has been selected as root partition!"
+	ibreak "Press any key to mount selected partition..."
+
+	IFS=$OIFS
+
+
+}
+
+save_vars(){
+
+	local config=""
+
+
+	if [[ $((${#LFS_HOME}>0)) == 1 ]]; then
+		config="LFS_HOME=${LFS_HOME}${NEWLINE}"
+	fi
+
+	if [[ $((${#LFS_PART}>0)) == 1 && $((${#LFS_FS}>0)) == 1 ]]; then	
+		config="${config}LFS_PART=${LFS_PART}${NEWLINE}"
+		config="${config}LFS_FS=${LFS_FS}${NEWLINE}"
+	fi
+
+	$(echo "$config" > "config.txt")
+
+}
+
+pkgdl(){
+
+
+
+	if [[ $#>1 ]]; then
+
+
+		if test -d "$2"; then
+		
+			sudo wget -q -P "$2/" "$1"
+		
+		else
+
+			errme 60 "Location $2 doesn't exist or is not a directory!"
+		fi
+
+	else
+
+
+		sudo wget -q -P "$1"
+
+
+	fi
+
+}
+
+setup_lfs(){
+
+
+	show_title
+
+	local config=$(<config.txt)
+	
+	#echo $config
+
+	local OIFS=$IFS
+	IFS=$NEWLINE
+
+	local vars=($config)
+
+	info 40 "Reading variables from config.txt"
+
+	#Reading vars
+	for var in ${vars[@]}
+	do
+
+		IFS="="
+		var=($var)
+		IFS=$OIFS
+
+		case ${var[0]} in 
+		
+			"LFS_HOME")
+
+				LFS_HOME=${var[1]}
+				LFS="$(eval "echo \"$LFS_HOME\"")/mnt/lfs"
+				;;
+
+			"LFS_PART")
+
+				LFS_PART=${var[1]}
+				;;
+
+			"LFS_FS")
+
+				LFS_FS=${var[1]}
+				;;
+
+		esac
+
+
+	done
+
+	echo -e "${GREEN}${BOLD}[ LFS_HOME ]${DEFAULT} $(eval "echo \"$LFS_HOME\"")"
+	echo -e "${GREEN}${BOLD}[ LFS ]${DEFAULT} $LFS"
+	echo -e "${GREEN}${BOLD}[ LFS_PART ]${DEFAULT} $(eval "echo \"$LFS_PART\"")"
+	echo -e "${GREEN}${BOLD}[ LFS_FS ]${DEFAULT} $(eval "echo \"$LFS_FS\"")"
+
+	ibreak -i "Press any key to start setup..."
+
+	show_title -b
+	msg 60 "${BOLD}STEP I:${DEFAULT} Please choose the root partition for LFS system."
+	ibreak "Press any key to continue..."
+
+	if [[ $LFS_PART != "" && $LFS_FS!="" ]]; then
+
+		local ans
+
+		show_title -b
+		info 60 "Found root partition $LFS_PART ($LFS_FS) inside config.txt file. Do you wish to use it? Alternatively, you can choose another one."
+		warn 60 "Make sure the partition exists!"
+		echo -e "1. Yes${NEWLINE}0. No${NEWLINE}"
+		read -n 1 -r -s ans 
+
+		while [[ !$ans=~'^[0-9]+$' && $ans != 0 && $ans != 1 ]]; do
+
+			show_title -b
+			errme 40 "Please insert only 0 or 1!"
+			info 60 "Found root partition $LFS_PART ($LFS_FS) inside config.txt file. Do you wish to use it? Alternatively, you can choose another one."
+			warn 60 "Make sure the partition exists!"
+			echo -e "1. Yes${NEWLINE}0. No${NEWLINE}"
+			read -n 1 -r -s ans
+
+		done
+
+		if [[ $ans == 0 ]]; then
+
+			select_root_part
+
+		fi
+
+	else
+
+		select_root_part
+
+	fi
+
+	export LFS_HOME
+	export LFS
+	export LFS_PART
+	export LFS_FS
+
+	save_vars
+	
+	#Mounting root part
+
+	show_title -b
+	info 60 "Using $LFS_PART ($LFS_FS) as root partition. Mounting..."
+	sudo mount -v -t $LFS_FS $LFS_PART $LFS
+
+	PROGRESS=$((PROGRESS+1))
+
+
+	#Creating limited directory structure
+	
+	show_title -b
+	msg 80 "${BOLD}STEP II:${DEFAULT} Setting up limited directory structure:"
+	
+	setup_directory "${LFS}/sources"
+	setup_directory "${LFS}/etc"
+	setup_directory "${LFS}/var"
+	setup_directory "${LFS}/tools"
+	setup_directory "${LFS}/usr"
+	setup_directory "${LFS}/usr/bin"
+	setup_directory "${LFS}/usr/sbin"
+	setup_directory "${LFS}/usr/lib"
+	
+
+	case $(uname -m) in
+  	
+  		x86_64) setup_directory "${LFS}/lib64" ;;
+	
+	esac
+
+	ibreak -w "All directories set up! Press any key to continue..."
+
+	#Creating symlinks
+	
+	show_title -b
+	msg 80 "${BOLD}STEP II:${DEFAULT} Setting up limited directory structure:"
+	slink "/usr/bin" "${LFS}/bin"
+	slink "/usr/sbin" "${LFS}/sbin"
+	slink "/usr/lib" "${LFS}/lib"
+
+
+	ibreak -w "Symlinks configured! Press any key to continue..."
+
+
+	#Downloading packages
+	show_title -b
+	msg 80 "${BOLD}STEP III:${DEFAULT} Downloading packages..."
+
+	ibreak -i "Press any key to start download..."
+
+
+	IFS=$NEWLINE
+
+	local packages=$(<"./wget-list-sysv")
+	packages=($packages)
+
+	
+	local pkcnt=${#packages[@]}
+	local pki=1
+
+	local pklog=""
+	for pack in ${packages[@]}
+	do
+
+		show_title -b
+		msg 80 "${BOLD}STEP III:${DEFAULT} Downloading packages..."
+
+		IFS="/"
+		local packname=($pack)
+		packname=${packname[$((${#packname[@]}-1))]}
+		IFS=$OIFS
+		
+
+		pklog=$(info 70 "Downloading package [$pki/$pkcnt]: $packname")
+		echo -e "$pklog"
+
+		local res
+
+		if test -f "${LFS}/sources/$packname"; then
+
+			res=$(echo -e "${GREEN}${BOLD}[ALREADY EXISTS]${DEFAULT}")
+
+		else
+
+			res=$(pkgdl "$pack" "${LFS}/sources")
+
+
+			if [[ $res == "" ]]; then
+				
+				res=$(echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}")
+
+			fi
+
+		fi
+
+		pklog="$pklog${NEWLINE}$res"
+
+
+		show_title -b
+		msg 80 "${BOLD}STEP III:${DEFAULT} Downloading packages..."
+		echo -e "$pklog"
+		sleep 0.01
+		pki=$((pki+1))
+
+
+	done
+
+	show_title -b
+	msg 60 "Download complete!"
+	ibreak -i "Press any key to continue..."
+
+	##Creating lfs user
+
+	show_title -b
+	msg 80 "${BOLD}STEP IV:${DEFAULT} Creating LFS user:"
+	info 60 "You are about to create a new user profile with the name \"lfs\" (can be changed later via \"usermod -l <new_username>\" command)"
+	info 60 "If you wish to change the name later don't forget to change the home directory as well using \"usermod -d <new_home> -m <new_username>\" command)"
+	ibreak -m "Press any key to continue..."
+
+	show_title -b
+	msg 80 "${BOLD}STEP IV:${DEFAULT} Creating LFS user:"
+	
+	local usr=$(grep "lfs" "/etc/passwd")
+
+
+
+	if [[ $usr == "" ]]; then
+
+		info 60 "Creating user group: lfs"
+		sudo groupadd lfs
+		echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+		info 60 "Creating user: lfs"
+		sudo useradd -s "/bin/bash" -g "lfs" -m -k "/dev/null" lfs
+		echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+		info 60 "Please create a password for new user: lfs"
+		sudo passwd lfs
+		echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	else
+		info 60 "User with the name \"lfs\" found, please rename it..."
+		warn 60 "Seems that a user with the name \"lfs\" already exists. If this profile is not meant to be used with LinuxFromScratch please ${LBLUEBG}give ${LBLUEBG}it ${LBLUEBG}another ${LBLUEBG}name${DEFAULT} or ${REDBG}QUIT ${REDBG}NOW!${DEFAULT} Otherwise continue with the given instructions."
+
+
+
+	fi
+
+	ibreak -i "Press any key to continue..."
+
+
+	##Filesystem permissions
+	
+	show_title -b
+	msg 80 "${BOLD}STEP V:${DEFAULT} Setting up file permissions:"
+
+	info 60 "Creating permissions for LFS directory structure:"
+	msg 60 "Handing ownership over LFS directory to root and setting permissions."
+	info 60 "$(sudo chown root:root "${LFS}")"
+	info 60 "$(sudo chmod 755 "${LFS}")"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	msg 60 "Handing ownership over source directory to root."
+	info 60 "$(sudo chmod -v a+wt "${LFS}/sources")"
+	info 60 "$(sudo chown root:root "${LFS}/sources/*")"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	msg 60 "Running CHOWN for user \"lfs\" in the limited directory..."
+
+	info 60 "$(sudo chown -v lfs "${LFS}/usr")"
+
+	info 60 "$(sudo chown -Rv lfs "${LFS}/usr")"
+
+	info 60 "$(sudo chown -v lfs "${LFS}/var")"
+
+	info 60 "$(sudo chown -v lfs "${LFS}/etc")"
+
+	info 60 "$(sudo chown -v lfs "${LFS}/tools")"
+
+	case $(uname -m) in
+  		x86_64) info 60 "$( sudo chown -v lfs "$LFS/lib64")" ;;
+	esac
+	
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+
+	ibreak -m "Press any key to continue..."
+
+	### Changing users
+	show_title -b
+	msg 80 "${BOLD}STEP VI:${DEFAULT} Setting up bash scripts for \"lfs\" user:"
+	warn 80 "The followind step will be executed as user \"lfs\"."
+	ibreak -w "Press any key to continue..."
+
+
+	##LFS bash setup
+	
+	show_title -b
+	msg 80 "${BOLD}STEP VI:${DEFAULT} Setting up bash scripts for \"lfs\" user:"
+
+	usr_home="$(sudo -u lfs -H bash -c "echo \$HOME")"
+
+	info 70 "Creating bash profile in: $usr_home/.bash_profile"
+	cmdline="exec env -i HOME=\$HOME TERM=\$TERM PS1='\u@\\h:[\W]\\\$' /bin/bash"
+
+	sudo -u lfs bash -c "printf %s \"$cmdline\" > /$usr_home/.bash_profile"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	info 70 "Creating \".bashrc\" in: $usr_home/.bashrc"
+
+	cores="$(nproc)"
+	if [ $cores = "" ]; then
+		cores=1
+	fi
+
+	local cmdline="set +h"
+	cmdline="$cmdline${NEWLINE}umask 022"
+	cmdline="$cmdline${NEWLINE}LFS=$LFS"
+	cmdline="$cmdline${NEWLINE}LC_ALL=POSIX"
+	cmdline="$cmdline${NEWLINE}LFS_TGT=$(uname -m)-lfs-linux-gnu"
+	cmdline="$cmdline${NEWLINE}PATH=/usr/bin"
+	cmdline="$cmdline${NEWLINE}if [ ! -L /bin ]; then PATH=/bin:\\\$PATH; fi"
+	cmdline="$cmdline${NEWLINE}PATH=\\\$LFS/tools/bin:\\\$PATH"
+	cmdline="$cmdline${NEWLINE}CONFIG_SITE=\\\$LFS/usr/share/config.site"
+	cmdline="$cmdline${NEWLINE}export LFS LC_ALL LFS_TGT PATH CONFIG_SITE"
+	cmdline="$cmdline${NEWLINE}export MAKEFLAGS=-j$cores"
+
+	sudo -u lfs bash -c "printf %s \"$cmdline\" > /$usr_home/.bashrc"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	info 60 "Forcing bash to use .bash_profile"
+	sudo -u lfs bash -c "source $usr_home/.bash_profile & exit"
+	echo -e "${YELLOW}${BOLD}[DONE]${DEFAULT}"
+
+	ibreak -i "Press any key to continue..."
+
+	##LAST STEP
+	#Unmounting per user choice
+
+	PROGRESS=100
+
+	show_title -b
+	info 60 "Done!"
+	msg 60 "Do you wish to unmount root partition ($LFS_PART - $LFS_FS)? Now it is safe to do so."
+	echo -e "1. Yes${NEWLINE}0. No${NEWLINE} "
+	read -n 1 -r -s ans
+	
+	while [[ !$ans=~'^[0-9]+$' && $ans != 0 && $ans != 1 ]]; do
+
+		show_title -b
+		errme 40 "Please insert only 0 or 1!"
+		info 60 "Done!"	
+		msg 60 "Do you wish to unmount root partition ($LFS_PART - $LFS_FS)? Now it is safe to do so."
+		echo -e "1. Yes${NEWLINE}0. No${NEWLINE} "
+		read -n 1 -r -s ans
+
+	done
+
+	if [[ $((ans==1)) == 1 ]]; then
+
+		local output=$(sudo umount -v $LFS_PART 2>&1)
+
+		show_title -b
+		info 60 "$output. Exiting now..."
+
+	else
+
+		show_title -b
+		info 60 "Exiting now..."
+
+	fi
+
+	sleep 1.25
+
+	clear
 }
 
 setup_lfs
