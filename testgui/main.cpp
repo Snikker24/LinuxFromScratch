@@ -16,6 +16,7 @@ extern "C" {
 
 // Utility for safe close
 class DrmDevice {
+
 public:
     DrmDevice(const std::string& path) {
         fd = open(path.c_str(), O_RDWR | O_CLOEXEC);
@@ -23,6 +24,16 @@ public:
             throw std::runtime_error("Failed to open DRM device: " + path);
         }
         this->path = path;
+
+        this->conn_count=0;
+        res=drmModeGetResources(fd);
+        if (!res) {
+            std::cerr << "drmModeGetResources failed\n";
+        }else{
+            this->conn_count=res->count_connectors;
+            drmModeFreeResources(res);
+        }
+
     }
 
     ~DrmDevice() {
@@ -44,24 +55,32 @@ public:
                 devices.emplace_back(new DrmDevice("/dev/dri/" + std::string(entry->d_name)));
             }
         }
+
         closedir(dir);
         return devices;
     }
-
 
     class Connector{
 
 
     private:
 
-        int fd;
+        int fd, conn_id, drm_supp;
         std::string parent_path;
-        int conn_id;
+        drmModeConnector* conn;
 
-        Connector(DrmDevice drm_d){
+        Connector(DrmDevice drm_d,conn_id){
 
+
+            drm_supp=0;
             fd=drm_d.getFd();
-            parent_path=drm_d.getPath();
+            parent_path=drm_d.getPath()
+            conn=drmModeGetConnector(fd, conn_id)
+            if (conn && conn->connection == DRM_MODE_CONNECTED && conn->count_modes > 0) {
+                drm_supp=1;
+            } else if(conn) {
+                drmModeFreeConnector(conn);
+            }
 
         }
 
@@ -75,11 +94,12 @@ public:
 
 
 
-    };
+    }
 
 private:
-    int fd;
+    int fd, conn_count;
     std::string path;
+    drmModeRes* res;
 };
 
 // Simple drawing function: fills screen with a color gradient
@@ -94,22 +114,6 @@ void draw_gradient(uint32_t* fb_ptr, uint32_t width, uint32_t height, uint32_t p
     }
 }
 
-// List available DRM devices in /dev/dri/
-std::vector<std::string> list_drm_devices() {
-    std::vector<std::string> devices;
-    DIR* dir = opendir("/dev/dri");
-    if (!dir) return devices;
-
-    struct dirent* entry;
-    while ((entry = readdir(dir)) != nullptr) {
-        if (strncmp(entry->d_name, "card", 4) == 0) {
-            devices.emplace_back("/dev/dri/" + std::string(entry->d_name));
-        }
-    }
-    closedir(dir);
-    return devices;
-}
-
 int main() {
     try {
         std::vector<DrmDevice*> drm_devices = DrmDevice::fetchAll();
@@ -120,7 +124,7 @@ int main() {
 
         std::cout << "Available DRM devices:\n";
         for (size_t i = 0; i < drm_devices.size(); ++i) {
-            std::cout << i << ": " << drm_devices[i]->getPath() << "\n";
+            std::cout << i << ": " << drm_devices[i].getPath() << "\n";
         }
 
         std::cout << "Select device index: ";
@@ -131,8 +135,7 @@ int main() {
             return 1;
         }
 
-        DrmDevice drm(drm_devices[choice]->getPath());
-        drm_devices.clear();
+        DrmDevice drm(drm_devices[choice]);
         int fd = drm.getFd();
 
         drmModeRes* res = drmModeGetResources(fd);
