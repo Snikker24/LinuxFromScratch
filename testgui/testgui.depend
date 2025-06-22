@@ -1,0 +1,15 @@
+# depslib dependency file v1.0
+1750608137 source:/home/david/Desktop/Programare/c/testgui/main.cpp
+	<iostream>
+	<vector>
+	<string>
+	<cstring>
+	<fcntl.h>
+	<unistd.h>
+	<dirent.h>
+	<sys/ioctl.h>
+	<sys/mman.h>
+	<algorithm>
+	<xf86drm.h>
+	<xf86drmMode.h>
+

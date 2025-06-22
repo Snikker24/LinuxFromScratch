@@ -32,9 +32,9 @@ public:
     int getFd() const { return fd; }
     std::string getPath() const { return path; }
 
-    static std::vector<DrmDevice> fetchAll(){
+    static std::vector<DrmDevice*> fetchAll(){
 
-        std::vector<DrmDevice> devices;
+        std::vector<DrmDevice*> devices;
         DIR* dir = opendir("/dev/dri");
         if (!dir) return devices;
 
@@ -112,7 +112,7 @@ std::vector<std::string> list_drm_devices() {
 
 int main() {
     try {
-        std::vector<DrmDevice> drm_devices = DrmDevice::fetchAll();
+        std::vector<DrmDevice*> drm_devices = DrmDevice::fetchAll();
         if (drm_devices.empty()) {
             std::cerr << "No DRM devices found\n";
             return 1;
@@ -120,7 +120,7 @@ int main() {
 
         std::cout << "Available DRM devices:\n";
         for (size_t i = 0; i < drm_devices.size(); ++i) {
-            std::cout << i << ": " << drm_devices[i].getPath() << "\n";
+            std::cout << i << ": " << drm_devices[i]->getPath() << "\n";
         }
 
         std::cout << "Select device index: ";
@@ -131,7 +131,8 @@ int main() {
             return 1;
         }
 
-        DrmDevice drm(drm_devices[choice]);
+        DrmDevice drm(drm_devices[choice]->getPath());
+        drm_devices.clear();
         int fd = drm.getFd();
 
         drmModeRes* res = drmModeGetResources(fd);
