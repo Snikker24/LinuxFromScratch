@@ -14,31 +14,30 @@ extern "C" {
     #include <xf86drmMode.h>
 }
 
-class DrmDevice;
-
 class DisplayMode{
 
-            private:
-                drmModeModeInfo mode;
+        private:
+            drmModeModeInfo mode;
 
-            public:
-                DisplayMode(drmModeModeInfo mode){
-                    this->mode=mode;
-                }
+        public:
+            DisplayMode(drmModeModeInfo mode){
+                this->mode=mode;
+            }
 
-                uint16_t getWidth(){
-                    return this->mode.vdisplay;
-                }
 
-                uint16_t getHeight(){
-                    return this->mode.hdisplay;
-                }
+            uint16_t getWidth(){
+                return this->mode.vdisplay;
+            }
 
-                float getFreq(){
+            uint16_t getHeight(){
+                return this->mode.hdisplay;
+            }
 
-                    return  mode.clock * 1000.0 / (mode.htotal *mode.vtotal);
+            float getFreq(){
 
-                }
+                return  mode.clock * 1000.0 / (mode.htotal *mode.vtotal);
+
+            }
 
 
         };
@@ -46,52 +45,14 @@ class DisplayMode{
 
 
     //Card connector
-class DrmConnector{
-
-
-private:
-
-    std::string parent_path;
-    drmModeConnector* conn;
-
-public:
-
-    DrmConnector(drmModeConnector *conn, const std::string& parent_path){
-
-        fd=drm_d.getFd();
-        this->parent_path=parent_path;
-        this->conn=new dmrModeConnector();
-
-
-        if (this->conn && this->conn->connection == DRM_MODE_CONNECTED && conn->count_modes > 0) {
-
-        } else if(this->conn) {
-            drmModeFreeConnector(conn);
-            conn=null;
-        }
-
-    }
-
-    DisplayMode* fetchModes(){
-
-        DisplayMode * modes=new DisplayMode[conn->count_modes];
-
-        for (int m = 0; m < connectors[i]->count_modes; ++m)
-            modes[m]=DisplayMode(conn->modes[m]);
-
-        return modes;
-    }
-
-    DrmDevice getParent(){
-
-        return DrmDevice(parent_path);
-
-    }
-
-};
 
 // Utility for safe close
 class DrmDevice {
+
+private:
+    int fd, conn_count;
+    std::string path;
+    drmModeRes* res;
 
 public:
     DrmDevice(const std::string& path) {
@@ -136,22 +97,63 @@ public:
         return devices;
     }
 
-    DrmConnector* getConnectors(){
+    class DrmConnector{
 
-        DrmConnector * conns=new DrmConnector[conn_count];
+
+        private:
+
+            std::string parent_path;
+            drmModeConnector* conn;
+
+        public:
+
+            DrmConnector(drmModeConnector *conn, const std::string& parent_path){
+
+                this->parent_path=parent_path;
+                this->conn=new drmModeConnector();
+
+
+                if (this->conn && this->conn->connection == DRM_MODE_CONNECTED && conn->count_modes > 0) {
+
+                } else if(this->conn) {
+                    drmModeFreeConnector(conn);
+                    conn=NULL;
+                }
+
+            }
+
+            std::vector<DisplayMode> fetchModes(){
+
+                std::vector<DisplayMode> modes;
+
+                for (int m = 0; m < conn->count_modes; ++m)
+                    modes.emplace_back(DisplayMode(conn->modes[m]));
+
+                return modes;
+            }
+
+            DrmDevice getParent(){
+
+                return DrmDevice(parent_path);
+
+            }
+
+    };
+
+
+    std::vector<DrmConnector> getConnectors(){
+
+        std::vector<DrmConnector> conns;
 
         for(int i=0;i<conn_count;++i){
 
-            conns[i]=DrmConnector(drmModeGetConnector(fd,i),);
+            conns.emplace_back(DrmConnector(drmModeGetConnector(fd,i),this->path));
         }
+
+        return conns;
 
     }
 
-
-private:
-    int fd, conn_count;
-    std::string path;
-    drmModeRes* res;
 };
 
 // Simple drawing function: fills screen with a color gradient
