@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <memory>
 #include "DrmDevice.h"
 #include "DrmConnector.h"
 #include "DisplayMode.h"
@@ -8,9 +9,15 @@
 
 int main() {
     try {
-        // 1. Open DRM device (usually /dev/dri/card0)
-        DrmDevice drm("/dev/dri/card0");
-        std::cout << "DRM device opened\n";
+        // 1. Discover all valid DRM devices
+        auto devices = DrmDevice::fetchAll();
+        if (devices.empty()) {
+            std::cerr << "No usable DRM devices found.\n";
+            return 1;
+        }
+
+        DrmDevice& drm = *devices[0];
+        std::cout << "Using DRM device: " << drm.path << "\n";
 
         // 2. Get connectors
         auto connectors = drm.getConnectors();
@@ -33,18 +40,17 @@ int main() {
         std::cout << "Using mode: " << mode.getWidth() << "x" << mode.getHeight()
                   << " @ " << mode.getFreq() << " Hz\n";
 
-        // 4. Create framebuffer for that mode size
+        // 4. Create framebuffer
         DrmFramebuffer fb(drm.fd, mode.getWidth(), mode.getHeight());
         std::cout << "Framebuffer created, id: " << fb.fb_id << "\n";
 
-        // 5. Get resources to find CRTC for the connector
+        // 5. Get DRM resources to find CRTC
         drmModeRes* resources = drmModeGetResources(drm.fd);
         if (!resources) {
             std::cerr << "Failed to get DRM resources\n";
             return 1;
         }
 
-        // Find a CRTC that matches this connector (simplified: pick the first)
         uint32_t crtc_id = 0;
         for (int i = 0; i < resources->count_crtcs; ++i) {
             crtc_id = resources->crtcs[i];
@@ -60,29 +66,28 @@ int main() {
 
         DrmCrtc crtc(drm.fd, crtc_id);
 
-        // 6. Set CRTC to display the framebuffer on the connector using the mode
+        // 6. Set CRTC to display the framebuffer
         uint32_t connectors_arr[1] = { conn.getId() };
         crtc.setCrtc(fb.fb_id, connectors_arr, 1, mode.mode);
         std::cout << "CRTC set successfully\n";
 
-        // 7. Fill framebuffer with a test pattern (simple color bars)
+        // 7. Fill framebuffer with test pattern
         uint32_t* pixels = fb.data();
         for (uint32_t y = 0; y < mode.getHeight(); ++y) {
             for (uint32_t x = 0; x < mode.getWidth(); ++x) {
                 uint32_t color = 0;
                 if (x < mode.getWidth() / 3)
-                    color = 0xFF0000FF; // Red with full alpha
+                    color = 0xFF0000FF; // Red
                 else if (x < 2 * mode.getWidth() / 3)
                     color = 0xFF00FF00; // Green
                 else
                     color = 0xFFFF0000; // Blue
-
                 pixels[y * mode.getWidth() + x] = color;
             }
         }
         std::cout << "Framebuffer filled with test pattern\n";
 
-        // Wait for user input before exit to keep the mode set
+        // Pause before exit
         std::cout << "Press Enter to exit and restore mode...\n";
         std::cin.get();
 

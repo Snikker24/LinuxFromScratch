@@ -14,4 +14,7 @@ public:
     ~DrmDevice();
 
     std::vector<DrmConnector> getConnectors() const;
+
+    static std::vector<std::unique_ptr<DrmDevice>> fetchAll();
+
 };

@@ -35,3 +35,23 @@ std::vector<DrmConnector> DrmDevice::getConnectors() const {
     drmModeFreeResources(res);
     return connectors;
 }
+
+std::vector<std::unique_ptr<DrmDevice>> DrmDevice::fetchAll() {
+    std::vector<std::unique_ptr<DrmDevice>> devices;
+
+    for (const auto& entry : std::filesystem::directory_iterator("/dev/dri")) {
+        if (entry.path().string().find("card") != std::string::npos) {
+            try {
+                auto dev = std::make_unique<DrmDevice>(entry.path());
+                auto conns = dev->getConnectors();
+                if (!conns.empty()) {
+                    devices.push_back(std::move(dev));
+                }
+            } catch (...) {
+                // ignore devices we cannot use
+            }
+        }
+    }
+
+    return devices;
+}
