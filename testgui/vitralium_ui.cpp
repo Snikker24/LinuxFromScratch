@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <algorithm>
 
 extern "C" {
     #include <xf86drm.h>
@@ -94,26 +95,55 @@ int main() {
             return 1;
         }
 
-        drmModeConnector* conn = nullptr;
-        drmModeModeInfo mode;
-        uint32_t conn_id = 0;
-
-        // Find the first connected connector
+        std::vector<drmModeConnector*> connectors;
         for (int i = 0; i < res->count_connectors; ++i) {
-            conn = drmModeGetConnector(fd, res->connectors[i]);
+            drmModeConnector* conn = drmModeGetConnector(fd, res->connectors[i]);
             if (conn && conn->connection == DRM_MODE_CONNECTED && conn->count_modes > 0) {
-                conn_id = conn->connector_id;
-                mode = conn->modes[0]; // Use first mode (usually preferred)
-                break;
+                connectors.push_back(conn);
+            } else if (conn) {
+                drmModeFreeConnector(conn);
             }
-            drmModeFreeConnector(conn);
         }
 
-        if (!conn_id) {
-            std::cerr << "No connected display found\n";
+        if (connectors.empty()) {
+            std::cerr << "No connected displays found\n";
             drmModeFreeResources(res);
             return 1;
         }
+
+        std::cout << "Available displays and resolutions:\n";
+        for (size_t i = 0; i < connectors.size(); ++i) {
+            std::cout << i << ": Connector ID: " << connectors[i]->connector_id << ", Modes: ";
+            for (int m = 0; m < connectors[i]->count_modes; ++m) {
+                std::cout << "(" << connectors[i]->modes[m].hdisplay << "x" << connectors[i]->modes[m].vdisplay << ") ";
+            }
+            std::cout << "\n";
+        }
+
+        std::cout << "Select connector index: ";
+        int conn_choice;
+        std::cin >> conn_choice;
+        if (conn_choice < 0 || static_cast<size_t>(conn_choice) >= connectors.size()) {
+            std::cerr << "Invalid connector index\n";
+            return 1;
+        }
+
+        drmModeConnector* conn = connectors[conn_choice];
+
+        std::cout << "Available modes for connector " << conn->connector_id << ":\n";
+        for (int i = 0; i < conn->count_modes; ++i) {
+            std::cout << i << ": " << conn->modes[i].hdisplay << "x" << conn->modes[i].vdisplay << "\n";
+        }
+
+        std::cout << "Select mode index: ";
+        int mode_choice;
+        std::cin >> mode_choice;
+        if (mode_choice < 0 || mode_choice >= conn->count_modes) {
+            std::cerr << "Invalid mode index\n";
+            return 1;
+        }
+
+        drmModeModeInfo mode = conn->modes[mode_choice];
 
         drmModeEncoder* enc = drmModeGetEncoder(fd, conn->encoder_id);
         uint32_t crtc_id = enc->crtc_id;
@@ -152,7 +182,7 @@ int main() {
 
         draw_gradient(static_cast<uint32_t*>(fb_ptr_void), create.width, create.height, create.pitch);
 
-        if (drmModeSetCrtc(fd, crtc_id, fb, 0, 0, &conn_id, 1, &mode)) {
+        if (drmModeSetCrtc(fd, crtc_id, fb, 0, 0, &conn->connector_id, 1, &mode)) {
             std::cerr << "drmModeSetCrtc failed\n";
             return 1;
         }
@@ -168,7 +198,7 @@ int main() {
         destroy.handle = create.handle;
         ioctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy);
 
-        drmModeFreeConnector(conn);
+        for (auto* c : connectors) drmModeFreeConnector(c);
         drmModeFreeResources(res);
 
     } catch (const std::exception& e) {
