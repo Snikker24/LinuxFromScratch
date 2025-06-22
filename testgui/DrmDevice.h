@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <memory>
 #include <vector>
 #include <xf86drm.h>
 #include <xf86drmMode.h>

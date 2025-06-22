@@ -1,7 +1,8 @@
 # depslib dependency file v1.0
-1750627580 source:/home/david/Desktop/Programare/c/testgui/main.cpp
+1750629006 source:/home/david/Desktop/Programare/c/testgui/main.cpp
 	<iostream>
 	<vector>
+	<memory>
 	"DrmDevice.h"
 	"DrmConnector.h"
 	"DisplayMode.h"
@@ -52,8 +53,9 @@
 	<dirent.h>
 	<iostream>
 
-1750627457 /home/david/Desktop/Programare/c/testgui/DrmDevice.h
+1750629167 /home/david/Desktop/Programare/c/testgui/DrmDevice.h
 	<string>
+	<memory>
 	<vector>
 	<xf86drm.h>
 	<xf86drmMode.h>

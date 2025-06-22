@@ -1,5 +1,6 @@
 #include "DrmDevice.h"
 #include <fcntl.h>
+#include <filesystem>
 #include <unistd.h>
 #include <stdexcept>
 #include <dirent.h>
