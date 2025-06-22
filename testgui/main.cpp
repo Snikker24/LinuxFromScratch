@@ -14,6 +14,82 @@ extern "C" {
     #include <xf86drmMode.h>
 }
 
+class DrmDevice;
+
+class DisplayMode{
+
+            private:
+                drmModeModeInfo mode;
+
+            public:
+                DisplayMode(drmModeModeInfo mode){
+                    this->mode=mode;
+                }
+
+                uint16_t getWidth(){
+                    return this->mode.vdisplay;
+                }
+
+                uint16_t getHeight(){
+                    return this->mode.hdisplay;
+                }
+
+                float getFreq(){
+
+                    return  mode.clock * 1000.0 / (mode.htotal *mode.vtotal);
+
+                }
+
+
+        };
+
+
+
+    //Card connector
+class DrmConnector{
+
+
+private:
+
+    std::string parent_path;
+    drmModeConnector* conn;
+
+public:
+
+    DrmConnector(drmModeConnector *conn, const std::string& parent_path){
+
+        fd=drm_d.getFd();
+        this->parent_path=parent_path;
+        this->conn=new dmrModeConnector();
+
+
+        if (this->conn && this->conn->connection == DRM_MODE_CONNECTED && conn->count_modes > 0) {
+
+        } else if(this->conn) {
+            drmModeFreeConnector(conn);
+            conn=null;
+        }
+
+    }
+
+    DisplayMode* fetchModes(){
+
+        DisplayMode * modes=new DisplayMode[conn->count_modes];
+
+        for (int m = 0; m < connectors[i]->count_modes; ++m)
+            modes[m]=DisplayMode(conn->modes[m]);
+
+        return modes;
+    }
+
+    DrmDevice getParent(){
+
+        return DrmDevice(parent_path);
+
+    }
+
+};
+
 // Utility for safe close
 class DrmDevice {
 
@@ -31,13 +107,13 @@ public:
             std::cerr << "drmModeGetResources failed\n";
         }else{
             this->conn_count=res->count_connectors;
-            drmModeFreeResources(res);
         }
 
     }
 
     ~DrmDevice() {
         if (fd >= 0) close(fd);
+        drmModeFreeResources(res);
     }
 
     int getFd() const { return fd; }
@@ -60,41 +136,17 @@ public:
         return devices;
     }
 
-    class Connector{
+    DrmConnector* getConnectors(){
 
+        DrmConnector * conns=new DrmConnector[conn_count];
 
-    private:
+        for(int i=0;i<conn_count;++i){
 
-        int fd, conn_id, drm_supp;
-        std::string parent_path;
-        drmModeConnector* conn;
-
-        Connector(DrmDevice drm_d, int conn_id){
-
-
-            drm_supp=0;
-            fd=drm_d.getFd();
-            parent_path=drm_d.getPath();
-            conn=drmModeGetConnector(fd, conn_id);
-            if (conn && conn->connection == DRM_MODE_CONNECTED && conn->count_modes > 0) {
-                drm_supp=1;
-            } else if(conn) {
-                drmModeFreeConnector(conn);
-            }
-
+            conns[i]=DrmConnector(drmModeGetConnector(fd,i),);
         }
 
-    public:
+    }
 
-        static int* resolutions(){
-
-
-
-        }
-
-
-
-    };
 
 private:
     int fd, conn_count;
