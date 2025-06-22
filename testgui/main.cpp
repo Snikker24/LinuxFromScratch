@@ -1,98 +1,93 @@
 #include <iostream>
-#include <memory>
+#include <vector>
 #include "DrmDevice.h"
 #include "DrmConnector.h"
-#include "DrmCrtc.h"
-#include "DrmFramebuffer.h"
 #include "DisplayMode.h"
-
-void drawGradient(uint32_t* buffer, uint32_t width, uint32_t height, uint32_t pitch) {
-    for (uint32_t y = 0; y < height; ++y) {
-        for (uint32_t x = 0; x < width; ++x) {
-            uint8_t r = x * 255 / width;
-            uint8_t g = y * 255 / height;
-            uint8_t b = 128;
-            buffer[y * (pitch / 4) + x] = (r << 16) | (g << 8) | b;
-        }
-    }
-}
+#include "DrmFramebuffer.h"
+#include "DrmCrtc.h"
 
 int main() {
     try {
-        auto devices = DrmDevice::enumerate();
-        if (devices.empty()) {
-            std::cerr << "No DRM devices found.\n";
+        // 1. Open DRM device (usually /dev/dri/card0)
+        DrmDevice drm("/dev/dri/card0");
+        std::cout << "DRM device opened\n";
+
+        // 2. Get connectors
+        auto connectors = drm.getConnectors();
+        if (connectors.empty()) {
+            std::cerr << "No connected connectors found\n";
+            return 1;
+        }
+        std::cout << connectors.size() << " connected connector(s) found\n";
+
+        // 3. Pick first connector and get modes
+        DrmConnector& conn = connectors[0];
+        auto modes = conn.getModes();
+        if (modes.empty()) {
+            std::cerr << "No modes on connector\n";
+            return 1;
+        }
+        std::cout << "First connector has " << modes.size() << " modes\n";
+
+        DisplayMode mode = modes[0];
+        std::cout << "Using mode: " << mode.getWidth() << "x" << mode.getHeight()
+                  << " @ " << mode.getFreq() << " Hz\n";
+
+        // 4. Create framebuffer for that mode size
+        DrmFramebuffer fb(drm.fd, mode.getWidth(), mode.getHeight());
+        std::cout << "Framebuffer created, id: " << fb.fb_id << "\n";
+
+        // 5. Get resources to find CRTC for the connector
+        drmModeRes* resources = drmModeGetResources(drm.fd);
+        if (!resources) {
+            std::cerr << "Failed to get DRM resources\n";
             return 1;
         }
 
-        std::cout << "Available DRM devices:\n";
-        for (size_t i = 0; i < devices.size(); ++i) {
-            std::cout << i << ": " << devices[i]->getPath() << "\n";
+        // Find a CRTC that matches this connector (simplified: pick the first)
+        uint32_t crtc_id = 0;
+        for (int i = 0; i < resources->count_crtcs; ++i) {
+            crtc_id = resources->crtcs[i];
+            if (crtc_id != 0) break;
         }
+        drmModeFreeResources(resources);
 
-        std::cout << "Select device index: ";
-        size_t devIndex;
-        std::cin >> devIndex;
-
-        if (devIndex >= devices.size()) {
-            std::cerr << "Invalid device index.\n";
+        if (crtc_id == 0) {
+            std::cerr << "No valid CRTC found\n";
             return 1;
         }
+        std::cout << "Using CRTC id: " << crtc_id << "\n";
 
-        DrmDevice& device = *devices[devIndex];
-        auto connectors = device.getConnectors();
+        DrmCrtc crtc(drm.fd, crtc_id);
 
-        std::cout << "Available connectors:\n";
-        for (size_t i = 0; i < connectors.size(); ++i) {
-            std::cout << i << ": Connector ID = " << connectors[i]->getId()
-                      << " (" << connectors[i]->getModeCount() << " modes)\n";
+        // 6. Set CRTC to display the framebuffer on the connector using the mode
+        uint32_t connectors_arr[1] = { conn.getId() };
+        crtc.setCrtc(fb.fb_id, connectors_arr, 1, mode.mode);
+        std::cout << "CRTC set successfully\n";
+
+        // 7. Fill framebuffer with a test pattern (simple color bars)
+        uint32_t* pixels = fb.data();
+        for (uint32_t y = 0; y < mode.getHeight(); ++y) {
+            for (uint32_t x = 0; x < mode.getWidth(); ++x) {
+                uint32_t color = 0;
+                if (x < mode.getWidth() / 3)
+                    color = 0xFF0000FF; // Red with full alpha
+                else if (x < 2 * mode.getWidth() / 3)
+                    color = 0xFF00FF00; // Green
+                else
+                    color = 0xFFFF0000; // Blue
+
+                pixels[y * mode.getWidth() + x] = color;
+            }
         }
+        std::cout << "Framebuffer filled with test pattern\n";
 
-        std::cout << "Select connector index: ";
-        size_t connIndex;
-        std::cin >> connIndex;
-
-        if (connIndex >= connectors.size()) {
-            std::cerr << "Invalid connector index.\n";
-            return 1;
-        }
-
-        DrmConnector& connector = *connectors[connIndex];
-        auto modes = connector.getModes();
-
-        std::cout << "Available modes:\n";
-        for (size_t i = 0; i < modes.size(); ++i) {
-            std::cout << i << ": " << modes[i].getWidth() << "x" << modes[i].getHeight()
-                      << " @ " << modes[i].getFreq() << "Hz\n";
-        }
-
-        std::cout << "Select mode index: ";
-        size_t modeIndex;
-        std::cin >> modeIndex;
-
-        if (modeIndex >= modes.size()) {
-            std::cerr << "Invalid mode index.\n";
-            return 1;
-        }
-
-        DisplayMode& mode = modes[modeIndex];
-        DrmCrtc crtc(device.getFd(), connector.getEncoder()->crtc_id, mode.getRaw());
-        DrmFramebuffer fb(device.getFd(), mode.getWidth(), mode.getHeight());
-
-        drawGradient(reinterpret_cast<uint32_t*>(fb.getBufferPtr()),
-                     fb.getWidth(), fb.getHeight(), fb.getPitch());
-
-        if (!crtc.setFramebuffer(fb.getFbId(), connector.getId())) {
-            std::cerr << "Failed to set CRTC.\n";
-            return 1;
-        }
-
-        std::cout << "Gradient displayed. Press Enter to exit...\n";
-        std::cin.ignore();
+        // Wait for user input before exit to keep the mode set
+        std::cout << "Press Enter to exit and restore mode...\n";
         std::cin.get();
 
-    } catch (const std::exception& e) {
-        std::cerr << "Exception: " << e.what() << "\n";
+    } catch (const std::exception& ex) {
+        std::cerr << "Error: " << ex.what() << "\n";
         return 1;
     }
 
