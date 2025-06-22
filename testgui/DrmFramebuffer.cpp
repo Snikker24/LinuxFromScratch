@@ -1,21 +1,28 @@
 #include "DrmFramebuffer.h"
+#include <fcntl.h>
 #include <sys/mman.h>
-#include <drm/drm.h>
-#include <sys/ioctl.h>
+#include <unistd.h>
 #include <stdexcept>
-#include <iostream>
+#include <cstring>
+#include <xf86drm.h>
 #include <xf86drmMode.h>
+#include <drm/drm.h>
+#include <drm/drm_mode.h>
 
+DrmFramebuffer::DrmFramebuffer(DrmDevice& device, const DisplayMode& mode)
+    : fd(device.fd)
+{
+    uint32_t width = mode.getWidth();
+    uint32_t height = mode.getHeight();
+    pitch = width * 4;
+    size = pitch * height;
 
-DrmFramebuffer::DrmFramebuffer(int drm_fd, uint32_t w, uint32_t h)
-    : fd(drm_fd), width(w), height(h), map(nullptr) {
-
-    drm_mode_create_dumb create = {};
+    struct drm_mode_create_dumb create = {};
     create.width = width;
     create.height = height;
     create.bpp = 32;
 
-    if (ioctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &create) < 0) {
+    if (drmIoctl(fd, DRM_IOCTL_MODE_CREATE_DUMB, &create) < 0) {
         throw std::runtime_error("Failed to create dumb buffer");
     }
 
@@ -27,28 +34,32 @@ DrmFramebuffer::DrmFramebuffer(int drm_fd, uint32_t w, uint32_t h)
         throw std::runtime_error("Failed to add framebuffer");
     }
 
-    drm_mode_map_dumb map_dumb = {};
+    struct drm_mode_map_dumb map_dumb = {};
     map_dumb.handle = handle;
-
-    if (ioctl(fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb) < 0) {
+    if (drmIoctl(fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb) < 0) {
         throw std::runtime_error("Failed to map dumb buffer");
     }
 
-    map = mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, map_dumb.offset);
+    map = static_cast<uint8_t*>(mmap(0, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, map_dumb.offset));
     if (map == MAP_FAILED) {
         throw std::runtime_error("mmap failed");
     }
+
+    std::memset(map, 0, size); // Clear buffer
 }
 
 DrmFramebuffer::~DrmFramebuffer() {
-    if (map) munmap(map, size);
+    if (map && map != MAP_FAILED) {
+        munmap(map, size);
+    }
+
     drmModeRmFB(fd, fb_id);
 
-    drm_mode_destroy_dumb destroy = {};
+    struct drm_mode_destroy_dumb destroy = {};
     destroy.handle = handle;
-    ioctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy);
+    drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy);
 }
 
-uint32_t* DrmFramebuffer::data() const {
-    return static_cast<uint32_t*>(map);
+uint32_t* DrmFramebuffer::data() {
+    return reinterpret_cast<uint32_t*>(map);
 }

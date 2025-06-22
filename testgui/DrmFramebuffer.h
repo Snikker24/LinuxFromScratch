@@ -1,20 +1,24 @@
 #pragma once
+
 #include <cstdint>
-#include <xf86drm.h>
+#include <vector>
+#include "DrmDevice.h"
+#include "DisplayMode.h"
 
 class DrmFramebuffer {
 public:
+    DrmFramebuffer(DrmDevice& device, const DisplayMode& mode);
+    ~DrmFramebuffer();
+
+    uint32_t fb_id;
+    uint32_t* data();
+
+private:
     int fd;
-    uint32_t width;
-    uint32_t height;
     uint32_t handle;
     uint32_t pitch;
     uint32_t size;
-    uint32_t fb_id;
-    void* map;
-
-    DrmFramebuffer(int drm_fd, uint32_t w, uint32_t h);
-    ~DrmFramebuffer();
-
-    uint32_t* data() const;
+    uint8_t* map = nullptr;
+    int drm_fd;
+    int bo_fd;
 };

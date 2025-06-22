@@ -1,13 +1,20 @@
 #pragma once
-#include <xf86drmMode.h>
+
+#include <cstdint>
+#include "DrmDevice.h"
+#include "DrmConnector.h"
+#include "DisplayMode.h"
+#include "DrmFramebuffer.h"
 
 class DrmCrtc {
 public:
-    int fd;
-    drmModeCrtc* crtc;
-
-    DrmCrtc(int drm_fd, uint32_t crtc_id);
+    DrmCrtc(DrmDevice& device, uint32_t crtc_id);
     ~DrmCrtc();
 
-    void setCrtc(uint32_t fb_id, uint32_t* connectors, int count, const drmModeModeInfo& mode);
+    void setCrtc(const DrmConnector& connector, const DisplayMode& mode, const DrmFramebuffer& fb);
+
+private:
+    int fd;
+    uint32_t crtc_id;
+    drmModeCrtc* saved_crtc;
 };

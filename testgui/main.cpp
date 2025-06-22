@@ -41,7 +41,7 @@ int main() {
                   << " @ " << mode.getFreq() << " Hz\n";
 
         // 4. Create framebuffer
-        DrmFramebuffer fb(drm.fd, mode.getWidth(), mode.getHeight());
+        DrmFramebuffer fb(drm, mode);
         std::cout << "Framebuffer created, id: " << fb.fb_id << "\n";
 
         // 5. Get DRM resources to find CRTC
@@ -64,11 +64,11 @@ int main() {
         }
         std::cout << "Using CRTC id: " << crtc_id << "\n";
 
-        DrmCrtc crtc(drm.fd, crtc_id);
+        DrmCrtc crtc(drm, crtc_id);
 
         // 6. Set CRTC to display the framebuffer
         uint32_t connectors_arr[1] = { conn.getId() };
-        crtc.setCrtc(fb.fb_id, connectors_arr, 1, mode.mode);
+        crtc.setCrtc(conn, mode, fb);
         std::cout << "CRTC set successfully\n";
 
         // 7. Fill framebuffer with test pattern
