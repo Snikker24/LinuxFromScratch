@@ -69,13 +69,13 @@ public:
         std::string parent_path;
         drmModeConnector* conn;
 
-        Connector(DrmDevice drm_d,conn_id){
+        Connector(DrmDevice drm_d, int conn_id){
 
 
             drm_supp=0;
             fd=drm_d.getFd();
-            parent_path=drm_d.getPath()
-            conn=drmModeGetConnector(fd, conn_id)
+            parent_path=drm_d.getPath();
+            conn=drmModeGetConnector(fd, conn_id);
             if (conn && conn->connection == DRM_MODE_CONNECTED && conn->count_modes > 0) {
                 drm_supp=1;
             } else if(conn) {
@@ -94,7 +94,7 @@ public:
 
 
 
-    }
+    };
 
 private:
     int fd, conn_count;
@@ -124,7 +124,7 @@ int main() {
 
         std::cout << "Available DRM devices:\n";
         for (size_t i = 0; i < drm_devices.size(); ++i) {
-            std::cout << i << ": " << drm_devices[i].getPath() << "\n";
+            std::cout << i << ": " << drm_devices[i]->getPath() << "\n";
         }
 
         std::cout << "Select device index: ";
@@ -135,7 +135,7 @@ int main() {
             return 1;
         }
 
-        DrmDevice drm(drm_devices[choice]);
+        DrmDevice drm(*drm_devices[choice]);
         int fd = drm.getFd();
 
         drmModeRes* res = drmModeGetResources(fd);
