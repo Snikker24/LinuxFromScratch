@@ -1,15 +1,61 @@
 # depslib dependency file v1.0
-1750608137 source:/home/david/Desktop/Programare/c/testgui/main.cpp
+1750627580 source:/home/david/Desktop/Programare/c/testgui/main.cpp
 	<iostream>
 	<vector>
-	<string>
-	<cstring>
+	"DrmDevice.h"
+	"DrmConnector.h"
+	"DisplayMode.h"
+	"DrmFramebuffer.h"
+	"DrmCrtc.h"
+
+1750627502 source:/home/david/Desktop/Programare/c/testgui/DisplayMode.cpp
+	"DisplayMode.h"
+
+1750627498 /home/david/Desktop/Programare/c/testgui/DisplayMode.h
+	<xf86drmMode.h>
+
+1750627508 source:/home/david/Desktop/Programare/c/testgui/DrmConnector.cpp
+	"DrmConnector.h"
+	<stdexcept>
+
+1750627438 /home/david/Desktop/Programare/c/testgui/DrmConnector.h
+	<vector>
+	<xf86drmMode.h>
+	"DisplayMode.h"
+
+1750627812 source:/home/david/Desktop/Programare/c/testgui/DrmFramebuffer.cpp
+	"DrmFramebuffer.h"
+	<sys/mman.h>
+	<drm/drm.h>
+	<sys/ioctl.h>
+	<stdexcept>
+	<iostream>
+	<xf86drmMode.h>
+
+1750627573 /home/david/Desktop/Programare/c/testgui/DrmFramebuffer.h
+	<cstdint>
+	<xf86drm.h>
+
+1750627532 source:/home/david/Desktop/Programare/c/testgui/DrmCrtc.cpp
+	"DrmCrtc.h"
+	<stdexcept>
+	<xf86drmMode.h>
+
+1750627479 /home/david/Desktop/Programare/c/testgui/DrmCrtc.h
+	<xf86drmMode.h>
+
+1750627517 source:/home/david/Desktop/Programare/c/testgui/DrmDevice.cpp
+	"DrmDevice.h"
 	<fcntl.h>
 	<unistd.h>
+	<stdexcept>
 	<dirent.h>
-	<sys/ioctl.h>
-	<sys/mman.h>
-	<algorithm>
+	<iostream>
+
+1750627457 /home/david/Desktop/Programare/c/testgui/DrmDevice.h
+	<string>
+	<vector>
 	<xf86drm.h>
 	<xf86drmMode.h>
+	"DrmConnector.h"
 
