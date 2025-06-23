@@ -1,39 +1,41 @@
 # depslib dependency file v1.0
-1750630013 source:/home/david/Desktop/Programare/c/testgui/main.cpp
+1750689069 source:/home/david/Desktop/Programare/c/testgui/main.cpp
 	<iostream>
 	<vector>
-	<memory>
 	"DrmDevice.h"
 	"DrmConnector.h"
 	"DisplayMode.h"
 	"DrmFramebuffer.h"
 	"DrmCrtc.h"
 
-1750627502 source:/home/david/Desktop/Programare/c/testgui/DisplayMode.cpp
+1750683229 source:/home/david/Desktop/Programare/c/testgui/DisplayMode.cpp
 	"DisplayMode.h"
 
-1750627498 /home/david/Desktop/Programare/c/testgui/DisplayMode.h
+1750682573 /home/david/Desktop/Programare/c/testgui/DisplayMode.h
 	<xf86drmMode.h>
 
-1750627508 source:/home/david/Desktop/Programare/c/testgui/DrmConnector.cpp
+1750686414 source:/home/david/Desktop/Programare/c/testgui/DrmConnector.cpp
 	"DrmConnector.h"
 	<stdexcept>
 
-1750627438 /home/david/Desktop/Programare/c/testgui/DrmConnector.h
+1750686354 /home/david/Desktop/Programare/c/testgui/DrmConnector.h
 	<vector>
 	<xf86drmMode.h>
 	"DisplayMode.h"
 
-1750627812 source:/home/david/Desktop/Programare/c/testgui/DrmFramebuffer.cpp
+1750689448 source:/home/david/Desktop/Programare/c/testgui/DrmFramebuffer.cpp
 	"DrmFramebuffer.h"
+	<fcntl.h>
 	<sys/mman.h>
-	<drm/drm.h>
-	<sys/ioctl.h>
+	<unistd.h>
 	<stdexcept>
-	<iostream>
+	<cstring>
+	<xf86drm.h>
 	<xf86drmMode.h>
+	<drm/drm.h>
+	<drm/drm_mode.h>
 
-1750629916 /home/david/Desktop/Programare/c/testgui/DrmFramebuffer.h
+1750689437 /home/david/Desktop/Programare/c/testgui/DrmFramebuffer.h
 	<cstdint>
 	<vector>
 	"DrmDevice.h"
@@ -45,12 +47,12 @@
 	<iostream>
 	<xf86drmMode.h>
 
-1750629729 /home/david/Desktop/Programare/c/testgui/DrmCrtc.h
-	<cstdint>
+1750682097 /home/david/Desktop/Programare/c/testgui/DrmCrtc.h
 	"DrmDevice.h"
 	"DrmConnector.h"
-	"DisplayMode.h"
 	"DrmFramebuffer.h"
+	"DisplayMode.h"
+	<stdint.h>
 
 1750629252 source:/home/david/Desktop/Programare/c/testgui/DrmDevice.cpp
 	"DrmDevice.h"

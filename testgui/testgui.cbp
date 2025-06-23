@@ -32,6 +32,16 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
+		<Unit filename="DisplayMode.cpp" />
+		<Unit filename="DisplayMode.h" />
+		<Unit filename="DrmConnector.cpp" />
+		<Unit filename="DrmConnector.h" />
+		<Unit filename="DrmCrtc.cpp" />
+		<Unit filename="DrmCrtc.h" />
+		<Unit filename="DrmDevice.cpp" />
+		<Unit filename="DrmDevice.h" />
+		<Unit filename="DrmFramebuffer.cpp" />
+		<Unit filename="DrmFramebuffer.h" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<lib_finder disable_auto="1" />

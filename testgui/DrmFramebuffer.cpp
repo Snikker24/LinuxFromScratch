@@ -60,6 +60,10 @@ DrmFramebuffer::~DrmFramebuffer() {
     drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy);
 }
 
+uint32_t DrmFramebuffer::getId() const{
+    return fb_id;
+}
+
 uint32_t* DrmFramebuffer::data() {
     return reinterpret_cast<uint32_t*>(map);
 }

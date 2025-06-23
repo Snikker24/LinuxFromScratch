@@ -1,6 +1,5 @@
 #include <iostream>
 #include <vector>
-#include <memory>
 #include "DrmDevice.h"
 #include "DrmConnector.h"
 #include "DisplayMode.h"
@@ -9,69 +8,44 @@
 
 int main() {
     try {
-        // 1. Discover all valid DRM devices
+        // 1. Discover and open first valid DRM device
         auto devices = DrmDevice::fetchAll();
         if (devices.empty()) {
-            std::cerr << "No usable DRM devices found.\n";
+            std::cerr << "No valid DRM devices found\n";
             return 1;
         }
-
         DrmDevice& drm = *devices[0];
-        std::cout << "Using DRM device: " << drm.path << "\n";
+        std::cout << "DRM device opened\n";
 
-        // 2. Get connectors
+        // 2. Get connected connectors
         auto connectors = drm.getConnectors();
         if (connectors.empty()) {
             std::cerr << "No connected connectors found\n";
             return 1;
         }
-        std::cout << connectors.size() << " connected connector(s) found\n";
-
-        // 3. Pick first connector and get modes
         DrmConnector& conn = connectors[0];
+        std::cout << "Connector found with id " << conn.getId() << "\n";
+
+        // 3. Get modes for connector
         auto modes = conn.getModes();
         if (modes.empty()) {
-            std::cerr << "No modes on connector\n";
+            std::cerr << "No modes available for connector\n";
             return 1;
         }
-        std::cout << "First connector has " << modes.size() << " modes\n";
-
         DisplayMode mode = modes[0];
-        std::cout << "Using mode: " << mode.getWidth() << "x" << mode.getHeight()
+        std::cout << "Selected mode: " << mode.getWidth() << "x" << mode.getHeight()
                   << " @ " << mode.getFreq() << " Hz\n";
 
-        // 4. Create framebuffer
+        // 4. Create framebuffer for selected mode
         DrmFramebuffer fb(drm, mode);
-        std::cout << "Framebuffer created, id: " << fb.fb_id << "\n";
+        std::cout << "Framebuffer created with id: " << fb.getId() << "\n";
 
-        // 5. Get DRM resources to find CRTC
-        drmModeRes* resources = drmModeGetResources(drm.fd);
-        if (!resources) {
-            std::cerr << "Failed to get DRM resources\n";
-            return 1;
-        }
-
-        uint32_t crtc_id = 0;
-        for (int i = 0; i < resources->count_crtcs; ++i) {
-            crtc_id = resources->crtcs[i];
-            if (crtc_id != 0) break;
-        }
-        drmModeFreeResources(resources);
-
-        if (crtc_id == 0) {
-            std::cerr << "No valid CRTC found\n";
-            return 1;
-        }
-        std::cout << "Using CRTC id: " << crtc_id << "\n";
-
-        DrmCrtc crtc(drm, crtc_id);
-
-        // 6. Set CRTC to display the framebuffer
-        uint32_t connectors_arr[1] = { conn.getId() };
-        crtc.setCrtc(conn, mode, fb);
+        // 5. Create CRTC wrapper for connector and set framebuffer
+        DrmCrtc crtc(drm, conn);
+        crtc.setCrtc(fb, conn, mode);
         std::cout << "CRTC set successfully\n";
 
-        // 7. Fill framebuffer with test pattern
+        // 6. Draw simple test pattern
         uint32_t* pixels = fb.data();
         for (uint32_t y = 0; y < mode.getHeight(); ++y) {
             for (uint32_t x = 0; x < mode.getWidth(); ++x) {
@@ -87,8 +61,8 @@ int main() {
         }
         std::cout << "Framebuffer filled with test pattern\n";
 
-        // Pause before exit
-        std::cout << "Press Enter to exit and restore mode...\n";
+        // 7. Wait for user input before exiting
+        std::cout << "Press Enter to exit and restore display...\n";
         std::cin.get();
 
     } catch (const std::exception& ex) {
