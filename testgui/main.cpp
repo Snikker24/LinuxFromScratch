@@ -13,12 +13,13 @@ int main()
 
     }
 
-    int * idx=new int;
+    int idx;
     do{
+
         std::cout<<"Device index:";
-        std::cin>>*idx;
-        *idx=*idx%devices.size();
-    }while(idx==NULL);
+        std::cin>>idx;
+
+    }while(idx<0||idx>=devices.size());
 
 
 
