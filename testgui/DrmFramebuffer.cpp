@@ -10,7 +10,7 @@
 #include <drm/drm_mode.h>
 
 DrmFramebuffer::DrmFramebuffer(DrmDevice& device, const DisplayMode& mode)
-    : fd(device.fd)
+    : fd(device.getFd())
 {
     uint32_t width = mode.getWidth();
     uint32_t height = mode.getHeight();

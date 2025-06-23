@@ -15,6 +15,14 @@ DrmDevice::~DrmDevice() {
     if (fd >= 0) close(fd);
 }
 
+int DrmDevice::getFd() const{
+    return fd;
+}
+
+std::string DrmDevice::getPath() const{
+    return path;
+}
+
 std::vector<DrmConnector> DrmDevice::getConnectors() const {
     std::vector<DrmConnector> connectors;
 

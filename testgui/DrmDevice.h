@@ -7,9 +7,16 @@
 #include "DrmConnector.h"
 
 class DrmDevice {
-public:
+
+private:
     int fd;
     std::string path;
+
+public:
+
+    int getFd() const;
+
+    std::string getPath() const;
 
     DrmDevice(const std::string& device_path);
     ~DrmDevice();

@@ -1,23 +1,20 @@
-#ifndef DRM_CRTC_H
-#define DRM_CRTC_H
+#pragma once
 
+#include <cstdint>
 #include "DrmDevice.h"
 #include "DrmConnector.h"
-#include "DrmFramebuffer.h"
 #include "DisplayMode.h"
-#include <stdint.h>
+#include "DrmFramebuffer.h"
 
 class DrmCrtc {
 public:
-    DrmCrtc(const DrmDevice& device, const DrmConnector& connector);
+    DrmCrtc(DrmDevice& device, uint32_t crtc_id);
     ~DrmCrtc();
 
-    void setCrtc(const DrmFramebuffer& framebuffer, const DrmConnector& connector, const DisplayMode& mode);
+    void setCrtc(const DrmConnector& connector, const DisplayMode& mode, const DrmFramebuffer& fb);
 
 private:
     int fd;
     uint32_t crtc_id;
     drmModeCrtc* saved_crtc;
 };
-
-#endif
