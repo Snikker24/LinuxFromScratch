@@ -19,7 +19,7 @@ std::vector<DrmDevice::DrmConnector> DrmDevice::connectors() const{
 
     std::vector<DrmConnector> connectors;
 
-    drmModeRes* res = drmModeGetResources(fd);
+    drmModeRes* res = drmModeGetResources(this->fd);
     if (!res) {
         std::cerr << "drmModeGetResources failed\n";
         return connectors;
@@ -46,6 +46,7 @@ std::vector<DrmDevice> DrmDevice::fetchAll(){
     for (const auto& entry : std::filesystem::directory_iterator("/dev/dri")) {
         if (entry.path().string().find("card") != std::string::npos) {
             try {
+                std::cout<<entry.path()<<"\n";
                 DrmDevice dev = DrmDevice(entry.path());
                 std::vector<DrmDevice::DrmConnector> conns = dev.connectors();
                 if (!conns.empty()) {
