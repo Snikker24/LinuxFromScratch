@@ -35,9 +35,9 @@ public:
     class DrmConnector{
 
     private:
-        const drmModeConnector iconnector;
+        const drmModeConnector * iconnector;
         DrmDevice * devparent;
-        DrmConnector(DrmDevice parent, drmModeConnector connector);
+        DrmConnector(DrmDevice parent, drmModeConnector * connector);
         friend class DrmDevice;
     public:
 
@@ -47,7 +47,7 @@ public:
 
         DrmDevice parent();
 
-        const drmModeConnector unwrapped();
+        const drmModeConnector* unwrapped();
 
         class DisplayMode{
 

@@ -1,11 +1,11 @@
 # depslib dependency file v1.0
-1750696284 source:/home/david/Desktop/Programare/cpp/testgui/main.cpp
-	<iostream>
+1750709344 source:/home/david/Desktop/Programare/cpp/testgui/main.cpp
+	"drm_dri.h"
 
 1750707536 source:/home/david/Desktop/Programare/cpp/testgui/drm_dri.cpp
 	"drm_dri.h"
 
-1750707409 /home/david/Desktop/Programare/cpp/testgui/drm_dri.h
+1750710453 /home/david/Desktop/Programare/cpp/testgui/drm_dri.h
 	<iostream>
 	<vector>
 	<string>

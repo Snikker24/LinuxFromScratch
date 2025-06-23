@@ -28,7 +28,7 @@ std::vector<DrmDevice::DrmConnector> DrmDevice::connectors() const{
     for (int i = 0; i < res->count_connectors; ++i) {
         drmModeConnector* conn = drmModeGetConnector(fd, res->connectors[i]);
         if (conn && conn->connection == DRM_MODE_CONNECTED && conn->count_modes > 0) {
-            connectors.emplace_back(DrmConnector(*this, *conn));
+            connectors.emplace_back(DrmConnector(*this, conn));
         } else if (conn) {
             drmModeFreeConnector(conn);
         }
@@ -73,8 +73,9 @@ std::string DrmDevice::devicePath() const{
 }
 
 //DrmConnector
-DrmDevice::DrmConnector::DrmConnector(DrmDevice parent, drmModeConnector connector):iconnector(connector){
+DrmDevice::DrmConnector::DrmConnector(DrmDevice parent, drmModeConnector* connector){
 
+    iconnector=connector;
     this->devparent=&parent;
 
 
@@ -82,17 +83,17 @@ DrmDevice::DrmConnector::DrmConnector(DrmDevice parent, drmModeConnector connect
 
 int DrmDevice::DrmConnector::id() const{
 
-    return this->iconnector.connector_id;
+    return this->iconnector->connector_id;
 
 }
 
 bool DrmDevice::DrmConnector::connected() const{
 
-    return this->iconnector.connection==DRM_MODE_CONNECTED && iconnector.count_modes > 0;
+    return this->iconnector->connection==DRM_MODE_CONNECTED && iconnector->count_modes > 0;
 
 }
 
-const drmModeConnector DrmDevice::DrmConnector::unwrapped(){
+const drmModeConnector* DrmDevice::DrmConnector::unwrapped(){
 
     return this->iconnector;
 
@@ -142,8 +143,8 @@ const drmModeModeInfo DrmDevice::DrmConnector::DisplayMode::unwrapped(){
 std::vector<DrmDevice::DrmConnector::DisplayMode> DrmDevice::DrmConnector::modes() const{
 
     std::vector<DrmDevice::DrmConnector::DisplayMode> modes;
-    for (int i = 0; i < iconnector.count_modes; ++i) {
-        modes.push_back(DisplayMode(*this,iconnector.modes[i]));
+    for (int i = 0; i < iconnector->count_modes; ++i) {
+        modes.push_back(DisplayMode(*this,iconnector->modes[i]));
     }
     return modes;
 
