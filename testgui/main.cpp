@@ -32,8 +32,7 @@ int main()
 
     }
 
-    int idx=idx(0,devices.size(),"Device index: ")
-
+    int idx=index(0,devices.size(),"Device index: ");
 
     DrmDevice device=devices[idx];
     std::vector<DrmDevice::DrmConnector> connectors=device.connectors();
@@ -44,17 +43,17 @@ int main()
 
     }
 
-    idx=idx(0,connectors.size(),"Connector index: ")
+    idx=index(0,connectors.size(),"Connector index: ");
 
     DrmDevice::DrmConnector connector=connectors[idx];
     std::vector<DrmDevice::DrmConnector::DisplayMode> modes=connector.modes();
     std::cout<<"Choose DRM connector mode:\n";
     for(int i=0;i<connectors.size();i++){
 
-        std::cout<<"["<<i<<"]: "<<modes[i].width()<<"x"<<modes[i].height()<<"@"<<modes[i].frequency()<<<<"\n";
+        std::cout<<"["<<i<<"]: "<<modes[i].width()<<"x"<<modes[i].height()<<"@"<<modes[i].frequency()<<"\n";
 
     }
 
-    int idx=idx(0,modes.size(),"Mode index: ")
+    idx=index(0,modes.size(),"Mode index: ");
 
 }
