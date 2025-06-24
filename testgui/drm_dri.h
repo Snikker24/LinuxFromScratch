@@ -56,6 +56,12 @@ public:
 
     const drmModeConnector* unwrapped() const;
 
+    DrmConnector(const DrmConnector&) = delete;
+    DrmConnector& operator=(const DrmConnector&) = delete;
+
+    DrmConnector(DrmConnector&& other) noexcept;
+    DrmConnector& operator=(DrmConnector&& other) noexcept;
+
 private:
     friend class DrmDevice;
     DrmConnector(DrmDevice& devparent, uint32_t conn_id);
@@ -68,8 +74,9 @@ private:
 class DisplayMode
 {
 private:
-    const drmModeModeInfo imode;
-    DrmConnector conn;
+    drmModeModeInfo imode;
+    const DrmConnector* conn;
+
 
     // Private constructor only accessible by friends
     DisplayMode(const DrmConnector& connector, const drmModeModeInfo& mode);
@@ -83,6 +90,14 @@ public:
     uint16_t width() const;
     uint16_t height() const;
     float frequency() const;
+
+    // Move constructor and move assignment
+    DisplayMode(DisplayMode&& other) noexcept;
+    DisplayMode& operator=(DisplayMode&& other) noexcept;
+
+    // Delete copy operations
+    DisplayMode(const DisplayMode&) = delete;
+    DisplayMode& operator=(const DisplayMode&) = delete;
 
     // Return reference to connector - const to avoid copy and mutation
     const DrmConnector& connector() const;
@@ -102,6 +117,12 @@ public:
     // Added method to get the parent DrmDevice
     const DrmDevice& parent() const;
 
+    DrmCrtC(const DrmCrtC&) = delete;
+    DrmCrtC& operator=(const DrmCrtC&) = delete;
+
+    DrmCrtC(DrmCrtC&& other) noexcept;
+    DrmCrtC& operator=(DrmCrtC&& other) noexcept;
+
 private:
     friend class DrmDevice;
     friend class Framebuffer;
@@ -119,8 +140,8 @@ private:
     uint32_t bpr = 0;      // bytes per row (pitch)
     uint32_t fbsize = 0;   // framebuffer size in bytes
     uint8_t* pxMap = nullptr;
-    DisplayMode dmode;
-    DrmCrtC dcrtc;
+    DisplayMode& dmode;
+    DrmCrtC& dcrtc;
 
 public:
     using PxMap = uint8_t*;
@@ -141,8 +162,8 @@ public:
     Framebuffer& operator=(const Framebuffer&) = delete;
 
     // Movable
-    //Framebuffer(Framebuffer&& other) noexcept;
-    //Framebuffer& operator=(Framebuffer&& other) noexcept;
+    Framebuffer(Framebuffer&& other) noexcept;
+    Framebuffer& operator=(Framebuffer&& other) noexcept;
 };
 
 #endif // DRM_DRI_H

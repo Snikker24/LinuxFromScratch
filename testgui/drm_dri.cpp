@@ -65,7 +65,7 @@ std::vector<DrmCrtC> DrmDevice::controllers() const
     for (int i = 0; i < res->count_crtcs; ++i) {
         try {
             DrmCrtC controller(*this, res->crtcs[i]);
-            crtcs.push_back(controller);
+            crtcs.push_back(std::move(controller));
         } catch (...) {
             // Ignore failures for individual CRTCs
         }
@@ -114,6 +114,30 @@ DrmConnector::~DrmConnector()
     }
 }
 
+DrmConnector::DrmConnector(DrmConnector&& other) noexcept {
+    devparent = other.devparent;
+    iconnector = other.iconnector;
+
+    other.devparent = nullptr;
+    other.iconnector = nullptr;
+}
+
+DrmConnector& DrmConnector::operator=(DrmConnector&& other) noexcept {
+    if (this != &other) {
+        // Free existing resource
+        if (iconnector) {
+            drmModeFreeConnector(iconnector);
+        }
+
+        devparent = other.devparent;
+        iconnector = other.iconnector;
+
+        other.devparent = nullptr;
+        other.iconnector = nullptr;
+    }
+    return *this;
+}
+
 uint32_t DrmConnector::id() const
 {
     if (!iconnector)
@@ -157,11 +181,29 @@ const drmModeConnector* DrmConnector::unwrapped() const
 ///DISPLAYMODE
 
 // Private constructor definition
-DisplayMode::DisplayMode(const DrmConnector& connector, const drmModeModeInfo& mode)
-    : imode(mode), conn(connector)
+DisplayMode::DisplayMode(const DrmConnector& connector, const  drmModeModeInfo& mode)
+    : imode(mode), conn(&connector)
 {
 
 }
+
+DisplayMode::DisplayMode(DisplayMode&& other) noexcept
+    : imode(other.imode), conn(other.conn)
+{
+    other.conn = nullptr;
+}
+
+DisplayMode& DisplayMode::operator=(DisplayMode&& other) noexcept
+{
+    if (this != &other) {
+        imode = other.imode;
+        conn = other.conn;
+        other.conn = nullptr;
+    }
+    return *this;
+}
+
+
 
 uint16_t DisplayMode::width() const
 {
@@ -181,7 +223,8 @@ float DisplayMode::frequency() const
 
 const DrmConnector& DisplayMode::connector() const
 {
-    return conn;
+    if (!conn) throw std::runtime_error("Null connector reference");
+    return *conn;
 }
 
 const drmModeModeInfo& DisplayMode::unwrapped() const
@@ -205,6 +248,25 @@ DrmCrtC::~DrmCrtC()
         drmModeFreeCrtc(icrtc);
         icrtc = nullptr;
     }
+}
+
+DrmCrtC::DrmCrtC(DrmCrtC&& other) noexcept
+    : devparent(other.devparent), icrtc(other.icrtc) {
+    other.devparent = nullptr;
+    other.icrtc = nullptr;
+}
+
+DrmCrtC& DrmCrtC::operator=(DrmCrtC&& other) noexcept {
+    if (this != &other) {
+        // cleanup current resources if needed
+        // (if DrmCrtC manages ownership of icrtc, free it here)
+        devparent = other.devparent;
+        icrtc = other.icrtc;
+
+        other.devparent = nullptr;
+        other.icrtc = nullptr;
+        }
+    return *this;
 }
 
 uint32_t DrmCrtC::id() const
@@ -306,9 +368,9 @@ void Framebuffer::render()
     }
 }
 
-/*Framebuffer::Framebuffer(Framebuffer&& other) noexcept
+Framebuffer::Framebuffer(Framebuffer&& other) noexcept
     : fb_id(other.fb_id), handle(other.handle), bpr(other.bpr), fbsize(other.fbsize),
-      pxMap(other.pxMap), dmode(std::move(other.dmode)), dcrtc(std::move(other.dcrtc))
+      pxMap(other.pxMap), dmode(other.dmode), dcrtc(other.dcrtc)
 {
     other.fb_id = 0;
     other.handle = 0;
@@ -320,15 +382,23 @@ void Framebuffer::render()
 Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept
 {
     if (this != &other) {
-        this->~Framebuffer(); // Cleanup current resources
+        // Clean up existing framebuffer resources
+        if (pxMap) {
+            int fd = dcrtc.parent().descriptor();
+            munmap(pxMap, fbsize);
+            drmModeRmFB(fd, fb_id);
+            drm_mode_destroy_dumb dreq = {};
+            dreq.handle = handle;
+            drmIoctl(fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
+        }
 
         fb_id = other.fb_id;
         handle = other.handle;
         bpr = other.bpr;
         fbsize = other.fbsize;
         pxMap = other.pxMap;
-        dmode = std::move(other.dmode);
-        dcrtc = std::move(other.dcrtc);
+
+        // **Do NOT assign dmode and dcrtc references** — they must stay bound to the same objects.
 
         other.fb_id = 0;
         other.handle = 0;
@@ -338,5 +408,4 @@ Framebuffer& Framebuffer::operator=(Framebuffer&& other) noexcept
     }
     return *this;
 }
-*/
 

@@ -35,7 +35,7 @@ int main()
     }
 
     idx = index(0, connectors.size(), "Connector index: ");
-    DrmConnector connector = connectors[idx];
+    DrmConnector connector = std::move(connectors[idx]);
 
     std::vector<DisplayMode> modes = connector.modes();
     std::cout << "Choose DRM connector mode:\n";
@@ -44,7 +44,7 @@ int main()
     }
 
     idx = index(0, modes.size(), "Mode index: ");
-    DisplayMode mode = modes[idx];
+    DisplayMode mode = std::move(modes[idx]);
 
     std::vector<DrmCrtC> crtcs = device.controllers();
     std::cout << "Choose DRM CRTC (controller):\n";
@@ -53,7 +53,7 @@ int main()
     }
 
     idx = index(0, crtcs.size(), "CRTC index: ");
-    DrmCrtC crtc = crtcs[idx];
+    DrmCrtC crtc = std::move(crtcs[idx]);
 
     Framebuffer fb(crtc, mode);
     fb.render();
