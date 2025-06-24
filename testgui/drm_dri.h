@@ -38,8 +38,11 @@ public:
         const drmModeConnector * iconnector;
         DrmDevice * devparent;
         DrmConnector(DrmDevice parent, drmModeConnector * connector);
-        friend class DrmDevice;
+        friend class DrmDevice;fsck
+
     public:
+
+        ~DrmConnector();
 
         int id() const;
 
