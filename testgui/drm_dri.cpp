@@ -32,6 +32,7 @@ std::string DrmDevice::path() const
 std::vector<DrmConnector> DrmDevice::connectors()
 {
     std::vector<DrmConnector> connectors;
+    std::cout << "Opened DRM device: " << device_path_ << ", fd = " << fd << std::endl;
 
     drmModeRes* res = drmModeGetResources(fd);
     if (!res) {
