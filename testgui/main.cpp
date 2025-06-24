@@ -27,7 +27,7 @@ int index(int a, int b, std::string msg){
 int main()
 {
 
-    std::vector<DrmDevice> devices=DrmDevice::fetchAll();
+    std::vector<std::unique_ptr<DrmDevice>> devices=DrmDevice::fetchAll();
     std::cout<<"Choose DRM device:\n";
     for(int i=0;i<devices.size();i++){
 

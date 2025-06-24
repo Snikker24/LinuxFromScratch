@@ -45,22 +45,22 @@ std::vector<DrmDevice::DrmConnector> DrmDevice::connectors() const{
 
 }
 
-std::vector<DrmDevice> DrmDevice::fetchAll(){
+std::vector<std::unique_ptr<DrmDevice>> DrmDevice::fetchAll(){
 
-    std::vector<DrmDevice> devices;
+    std::vector<std::unique_ptr<DrmDevice>> devices;
 
     for (const auto& entry : std::filesystem::directory_iterator("/dev/dri")) {
         if (entry.path().string().find("card") != std::string::npos) {
             try {
                 std::cout<<entry.path()<<"\n";
-                DrmDevice dev = DrmDevice(entry.path());
-                std::vector<DrmDevice::DrmConnector> conns = dev.connectors();
+                std::unique_ptr<DrmDevice> dev = std::make_unique<DrmDevice>(entry.path());
+                std::vector<DrmDevice::DrmConnector> conns = dev->connectors();
                 if (!conns.empty()) {
-                    devices.push_back(dev);
+                    devices.push_back(std::move(dev));
                 }
             } catch (...) {
 
-                std::cout<<"You are here..."
+                std::cout<<"You are here...";
                 // ignore devices we cannot use
             }
         }

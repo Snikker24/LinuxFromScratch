@@ -26,7 +26,7 @@ private:
 public:
 
     ~DrmDevice();
-    static std::vector<DrmDevice> fetchAll();
+    static std::vector<std::unique_ptr<DrmDevice>> fetchAll();
 
     int descriptor() const;
 
