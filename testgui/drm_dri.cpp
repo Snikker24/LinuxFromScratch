@@ -364,6 +364,23 @@ const DrmCrtC& Framebuffer::controller() const
 
 void Framebuffer::render()
 {
+
+    int ret = drmModeSetCrtc(
+        dcrtc.parent().descriptor(),        // DRM file descriptor
+        dcrtc.id(),          // CRTC ID
+        fb_id_,             // Framebuffer ID
+        0, 0,               // Position X, Y on screen
+        &dmode.connector().id(),    // Connector ID array
+        1,                  // Connector count
+        dmode.unwrapped()          // Display mode info
+    );
+
+    if (ret) {
+        perror("drmModeSetCrtc failed");
+    } else {
+        std::cout << "Framebuffer successfully set to CRTC.\n";
+    }
+
     if (pxMap && fbsize > 0) {
         memset(pxMap, 0, fbsize);  // Clear framebuffer to black
     }
