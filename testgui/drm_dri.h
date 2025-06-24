@@ -57,7 +57,7 @@ public:
 
         private:
             const drmModeModeInfo imode;
-            DrmConnector* conn;
+            DrmDevice::DrmConnector* conn;
             DisplayMode(DrmConnector connector, drmModeModeInfo mode);
             friend class DrmConnector;
             friend class Framebuffer;
