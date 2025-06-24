@@ -13,6 +13,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add directory="include" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -22,6 +23,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add directory="include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -35,6 +37,7 @@
 		<Unit filename="drm_dri.cpp" />
 		<Unit filename="drm_dri.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="testgui.layout" />
 		<Extensions>
 			<lib_finder disable_auto="1" />
 		</Extensions>
