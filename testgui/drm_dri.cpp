@@ -59,6 +59,8 @@ std::vector<DrmDevice> DrmDevice::fetchAll(){
                     devices.push_back(dev);
                 }
             } catch (...) {
+
+                std::cout<<"You are here..."
                 // ignore devices we cannot use
             }
         }
