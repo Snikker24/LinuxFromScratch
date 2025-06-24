@@ -6,12 +6,20 @@ DrmDevice::DrmDevice(std::string device_path){
     path=device_path;
     fd = open(path.c_str(), O_RDWR | O_CLOEXEC);
     if (fd < 0) throw std::runtime_error("Failed to open DRM device: " + path);
+    else
+        res=drmModeGetResources(fd);
+
 }
 
 
 DrmDevice::~DrmDevice(){
 
-    if (fd >= 0) close(fd);
+    if (fd >= 0){
+
+        drmModeFreeResources(res);
+        close(fd);
+
+    }
 
 }
 
@@ -19,10 +27,8 @@ std::vector<DrmDevice::DrmConnector> DrmDevice::connectors() const{
 
     std::vector<DrmConnector> connectors;
 
-    drmModeRes* res = drmModeGetResources(this->fd);
     if (!res) {
         std::cerr << "drmModeGetResources failed\n";
-        drmModeFreeResources(res);
         return connectors;
     }
 
@@ -35,7 +41,6 @@ std::vector<DrmDevice::DrmConnector> DrmDevice::connectors() const{
         }
     }
 
-    drmModeFreeResources(res);
     return connectors;
 
 }

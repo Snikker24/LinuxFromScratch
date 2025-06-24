@@ -19,6 +19,7 @@ class DrmDevice{
 
 private:
     int fd;
+    drmModeRes * res;
     std::string path;
     DrmDevice(std::string device_path);
 
