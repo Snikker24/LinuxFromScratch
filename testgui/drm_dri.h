@@ -37,7 +37,7 @@ public:
     private:
         drmModeConnector * iconnector;
         DrmDevice * devparent;
-        DrmConnector(DrmDevice parent, drmModeConnector * connector);
+        DrmConnector(DrmDevice parent, uint32_t conn_id);
         friend class DrmDevice;
 
     public:
