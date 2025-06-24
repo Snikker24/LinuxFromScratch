@@ -26,7 +26,7 @@ int main()
     }
 
     int idx = index(0, devices.size(), "Device index: ");
-    DrmDevice device = devices[idx];
+    DrmDevice device(devices[idx].path());
 
     std::vector<DrmConnector> connectors = device.connectors();
     std::cout << "Choose DRM device connector:\n";
