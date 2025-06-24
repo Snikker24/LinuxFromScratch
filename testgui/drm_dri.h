@@ -35,10 +35,10 @@ public:
     class DrmConnector{
 
     private:
-        const drmModeConnector * iconnector;
+        drmModeConnector * iconnector;
         DrmDevice * devparent;
         DrmConnector(DrmDevice parent, drmModeConnector * connector);
-        friend class DrmDevice;fsck
+        friend class DrmDevice;
 
     public:
 
@@ -59,6 +59,7 @@ public:
             DrmConnector* conn;
             DisplayMode(DrmConnector connector, drmModeModeInfo mode);
             friend class DrmConnector;
+            friend class Framebuffer;
         public:
 
 

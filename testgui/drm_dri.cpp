@@ -84,8 +84,6 @@ DrmDevice::DrmConnector::DrmConnector(DrmDevice parent, drmModeConnector* connec
 DrmDevice::DrmConnector::~DrmConnector(){
 
     drmModeFreeConnector(this->iconnector);
-    this->devparent=&parent;
-
 
 }
 
