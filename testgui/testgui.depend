@@ -2,9 +2,10 @@
 1750795638 source:/home/david/Desktop/Programare/cpp/testgui/main.cpp
 	"drm_dri.h"
 
-1750773953 source:/home/david/Desktop/Programare/cpp/testgui/drm_dri.cpp
+1750795844 source:/home/david/Desktop/Programare/cpp/testgui/drm_dri.cpp
+	"drm_dri.h"
 
-1750795862 /home/david/Desktop/Programare/cpp/testgui/drm_dri.h
+1750796100 /home/david/Desktop/Programare/cpp/testgui/drm_dri.h
 	<iostream>
 	<vector>
 	<string>

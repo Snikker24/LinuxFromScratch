@@ -137,8 +137,8 @@ public:
     void render();
 
     // Non-copyable to avoid multiple owners of pxMap & fb resources
-    //Framebuffer(const Framebuffer&) = delete;
-    //Framebuffer& operator=(const Framebuffer&) = delete;
+    Framebuffer(const Framebuffer&) = delete;
+    Framebuffer& operator=(const Framebuffer&) = delete;
 
     // Movable
     //Framebuffer(Framebuffer&& other) noexcept;
