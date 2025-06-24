@@ -81,6 +81,14 @@ DrmDevice::DrmConnector::DrmConnector(DrmDevice parent, drmModeConnector* connec
 
 }
 
+DrmDevice::DrmConnector::~DrmConnector(){
+
+    drmModeFreeConnector(this->iconnector);
+    this->devparent=&parent;
+
+
+}
+
 int DrmDevice::DrmConnector::id() const{
 
     return this->iconnector->connector_id;
