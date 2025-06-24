@@ -22,6 +22,7 @@ std::vector<DrmDevice::DrmConnector> DrmDevice::connectors() const{
     drmModeRes* res = drmModeGetResources(this->fd);
     if (!res) {
         std::cerr << "drmModeGetResources failed\n";
+        drmModeFreeResources(res);
         return connectors;
     }
 
