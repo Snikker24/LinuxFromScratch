@@ -21,10 +21,9 @@ private:
     int fd;
     drmModeRes * res;
     std::string path;
-    DrmDevice(std::string device_path);
 
 public:
-
+    DrmDevice(std::string device_path);
     ~DrmDevice();
     static std::vector<std::unique_ptr<DrmDevice>> fetchAll();
 

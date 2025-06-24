@@ -31,13 +31,13 @@ int main()
     std::cout<<"Choose DRM device:\n";
     for(int i=0;i<devices.size();i++){
 
-        std::cout<<"["<<i<<"]: "<<devices[i].devicePath()<<"\n";
+        std::cout<<"["<<i<<"]: "<<devices[i]->devicePath()<<"\n";
 
     }
 
     int idx=index(0,devices.size(),"Device index: ");
 
-    DrmDevice device=devices[idx];
+    DrmDevice& device=*devices[idx];
     std::vector<DrmDevice::DrmConnector> connectors=device.connectors();
     std::cout<<"Choose DRM device connector:\n";
     for(int i=0;i<connectors.size();i++){
