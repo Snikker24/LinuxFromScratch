@@ -1,5 +1,6 @@
 #include "drm_dri.h"
 #include <atomic>
+#include <cmath>
 #include <thread>
 #include <chrono>
 
@@ -50,7 +51,78 @@ public:
         r_t.join();
     }
 
+    bool running(){
+
+        return status;
+
+    }
+
 };
+
+static void testpattern0(Framebuffer * fb){
+
+    uint8_t* pixels = fb->pixels();
+    int width = fb->mode().width();
+    int height = fb->mode().height();
+    int pitch = fb->bytesize() / height; // assumes evenly divisible
+
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int offset = y * pitch + x * 4;
+            pixels[offset + 0] = x * 255 / width;  // Blue
+            pixels[offset + 1] = y * 255 / height; // Green
+            pixels[offset + 2] = 128;              // Red
+            pixels[offset + 3] = 0;                // Alpha (unused)
+        }
+    }
+
+}
+
+void testpattern1(Framebuffer * fb){
+
+    uint8_t* pixels = fb->pixels();
+    int width = fb->mode().width();
+    int height = fb->mode().height();
+    int pitch = fb->bytesize() / height; // assumes evenly divisible
+
+    float square_size=width*height*0.25f;
+
+    for (int y = 0; y < height; ++y) {
+        int square_y = static_cast<int>(std::floor(y / square_size));
+
+        for (int x = 0; x < width; ++x) {
+            int square_x = static_cast<int>(std::floor(x / square_size));
+            bool is_violet = (square_x + square_y) % 2 == 0;
+            int offset = y * pitch + x * 4;
+
+            if (is_violet) {
+                pixels[offset + 0] = 255; // Blue
+                pixels[offset + 1] = 0;   // Green
+                pixels[offset + 2] = 255; // Red
+                pixels[offset + 3] = 0;   // Alpha
+            } else {
+                pixels[offset + 0] = 0;
+                pixels[offset + 1] = 0;
+                pixels[offset + 2] = 0;
+                pixels[offset + 3] = 0;
+            }
+        }
+    }
+}
+
+void testpattern_cycle(Framebuffer * fb, bool* status){
+
+    while(*status){
+
+        testpattern0(fb);
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+        testpattern1(fb);
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    }
+
+
+}
 
 int index(int a, int b, std::string msg){
     if(a == b)
@@ -67,7 +139,7 @@ int index(int a, int b, std::string msg){
     return idx;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
     std::vector<DrmDevice> devices = DrmDevice::fetchAll();
     std::cout << "Choose DRM device:\n";
@@ -107,22 +179,29 @@ int main()
 
     Framebuffer fb(crtc, mode);
 
-    uint8_t* pixels = fb.pixels();
-    int width = mode.width();
-    int height = mode.height();
-    int pitch = fb.bytesize() / height; // assumes evenly divisible
+    bool cycle=false;
+    std::thread thd;
+    if(argc==2){
 
-    for (int y = 0; y < height; ++y) {
-        for (int x = 0; x < width; ++x) {
-            int offset = y * pitch + x * 4;
-            pixels[offset + 0] = x * 255 / width;  // Blue
-            pixels[offset + 1] = y * 255 / height; // Green
-            pixels[offset + 2] = 128;              // Red
-            pixels[offset + 3] = 0;                // Alpha (unused)
+        std::string arg1=argv[1];
+
+        if(arg1=="testpattern0")
+            testpattern0(&fb);
+        else if(arg1=="testpattern1")
+            testpattern1(&fb);
+        else if(arg1=="testpatterncycle"){
+            cycle=true;
+            thd=std::thread(testpattern_cycle,&fb,&cycle);
         }
+
+    }else{
+
+        testpattern0(&fb);
+
     }
 
     std::cout << "Framebuffer active. Press Enter to exit...\n";
+
 
 
     Renderer ren(fb);
@@ -131,6 +210,8 @@ int main()
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin.get();
 
+    cycle=false;
+    thd.join();
     std::cout << "Closing thread now...\n";
 
     ren.stop();
