@@ -72,9 +72,13 @@ int main()
         }
     }
 
-    fb.render();
     std::cout << "Framebuffer active. Press Enter to exit...\n";
-    std::cin.get();
+
+
+    while(std::cin.get()){
+
+        fb.render();
+    }
 
     return 0;
 }
