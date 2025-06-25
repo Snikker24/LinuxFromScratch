@@ -56,7 +56,6 @@ int main()
     DrmCrtC crtc = std::move(crtcs[idx]);
 
     Framebuffer fb(crtc, mode);
-    fb.render();
 
     uint8_t* pixels = fb.pixels();
     int width = mode.width();
@@ -73,6 +72,7 @@ int main()
         }
     }
 
+    fb.render();
     std::cout << "Framebuffer active. Press Enter to exit...\n";
     std::cin.get();
 
