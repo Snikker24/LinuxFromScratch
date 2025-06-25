@@ -73,5 +73,8 @@ int main()
         }
     }
 
+    std::cout << "Framebuffer active. Press Enter to exit...\n";
+    std::cin.get();
+
     return 0;
 }
