@@ -132,6 +132,9 @@ int main()
     Renderer ren(fb);
     ren.start();
     std::cin.get();
+
+    std::cout << "Closing thread now...\n";
+
     ren.stop();
 
     return 0;
