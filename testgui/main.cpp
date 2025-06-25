@@ -86,7 +86,7 @@ void testpattern1(Framebuffer * fb){
     int pitch = fb->bytesize() / height; // assumes evenly divisible
 
     float square_size=25;//(float)(width*height)*0.25f;
-    std::cout<<"Square size area: "<<square_size<<"\n";
+    //std::cout<<"Square size area: "<<square_size<<"\n";
 
     for (int y = 0; y < height; ++y) {
         int square_y = static_cast<int>(std::floor(y / square_size));
