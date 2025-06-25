@@ -238,6 +238,16 @@ const drmModeModeInfo& DisplayMode::unwrapped() const
 DrmCrtC::DrmCrtC(const DrmDevice& device, uint32_t crtc_id)
     : devparent(&device), icrtc(drmModeGetCrtc(device.descriptor(), crtc_id))
 {
+
+    idx=-1;
+    drmModeRes * res=drmModeGetResources(devparent->descriptor());
+    for(uint32_t i=0;i<res->count_crtcs; i++)
+        if(res->crtcs[i]==icrtc->crtc_id){
+            idx=i;
+            break;
+        }
+    drmModeFreeResources(res);
+
     if (!icrtc) {
         throw std::runtime_error("Failed to get CRTC");
     }
@@ -364,6 +374,13 @@ const DrmCrtC& Framebuffer::controller() const
 
 void Framebuffer::render()
 {
+
+
+    drmModeEncoder * enc= drmModeGetEncoder(dcrtc.parent().descriptor(), dmode.connector().unwrapped()->encoder_id);
+
+    if(!(enc->possible_crtcs && (1<< dcrtc.index()))){
+        throw std::runtime_error("Selected CRTC is not compatible with encoder");
+    }
 
     uint32_t id[]{dmode.connector().id()};
     drmModeModeInfo * mode_ptr=dmode.connector().unwrapped()->modes;

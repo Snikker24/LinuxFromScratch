@@ -112,6 +112,8 @@ public:
 
     uint32_t id() const;
 
+    uint32_t index() const;
+
     const drmModeCrtc* unwrapped() const;
 
     // Added method to get the parent DrmDevice
@@ -129,6 +131,7 @@ private:
 
     DrmCrtC(const DrmDevice& device, uint32_t crtc_id);
 
+    uint32_t idx;
     const DrmDevice* devparent = nullptr;
     drmModeCrtc* icrtc = nullptr;
 };
