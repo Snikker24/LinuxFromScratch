@@ -365,14 +365,16 @@ const DrmCrtC& Framebuffer::controller() const
 void Framebuffer::render()
 {
 
+    uint32_t id[]{dmode.connector().id()};
+    drmModeModeInfo * mode_ptr=dmode.connector().unwrapped()->modes;
     int ret = drmModeSetCrtc(
         dcrtc.parent().descriptor(),        // DRM file descriptor
         dcrtc.id(),          // CRTC ID
-        fb_id_,             // Framebuffer ID
+        fb_id,             // Framebuffer ID
         0, 0,               // Position X, Y on screen
-        &dmode.connector().id(),    // Connector ID array
-        1,                  // Connector count
-        dmode.unwrapped()          // Display mode info
+        id,    // Connector ID array
+        1,               // Connector count
+        mode_ptr          // Display mode info
     );
 
     if (ret) {
