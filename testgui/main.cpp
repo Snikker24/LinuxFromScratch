@@ -1,4 +1,58 @@
 #include "drm_dri.h"
+#include <atomic>
+#include <thread>
+#include <chrono>
+
+class Renderer{
+
+private:
+    Framebuffer* fb;
+    std::atomic<bool> status;
+    std::thread r_t;
+
+    static void renderLoop(Framebuffer * fb, std::atomic<bool>* status){
+
+        int width = fb->mode().width();
+        int height = fb->mode().height();
+        int pitch = fb->bytesize() / height;
+
+        while (status) {
+
+        fb->render();
+        std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60 FPS
+        }
+
+    }
+
+public:
+
+    Renderer(Framebuffer& a_fb){
+
+        fb=&a_fb;
+        status=false;
+    }
+
+
+    void start(){
+
+        status=true;
+        r_t=std::thread(Renderer::renderLoop, fb, &status);
+
+    }
+
+    void stop(){
+
+        status=false;
+        r_t.join();
+
+    }
+
+
+
+
+
+
+};
 
 using namespace std;
 
@@ -75,10 +129,10 @@ int main()
     std::cout << "Framebuffer active. Press Enter to exit...\n";
 
 
-    while(std::cin.get()){
-
-        fb.render();
-    }
+    Renderer ren(fb);
+    ren.start();
+    std::cin.get();
+    ren.stop();
 
     return 0;
 }

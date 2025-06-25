@@ -402,7 +402,7 @@ void Framebuffer::render()
     if (ret) {
         perror("drmModeSetCrtc failed");
     } else {
-        std::cout << "Framebuffer successfully set to CRTC.\n";
+        //std::cout << "Framebuffer successfully set to CRTC.\n";
     }
 
     //if (pxMap && fbsize > 0) {
