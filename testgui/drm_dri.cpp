@@ -405,9 +405,9 @@ void Framebuffer::render()
         std::cout << "Framebuffer successfully set to CRTC.\n";
     }
 
-    if (pxMap && fbsize > 0) {
-        memset(pxMap, 0, fbsize);  // Clear framebuffer to black
-    }
+    //if (pxMap && fbsize > 0) {
+        //memset(pxMap, 0, fbsize);  // Clear framebuffer to black
+    //}
 }
 
 Framebuffer::Framebuffer(Framebuffer&& other) noexcept
