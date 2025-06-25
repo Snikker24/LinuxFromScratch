@@ -21,7 +21,10 @@ private:
         fb->render();
         std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60 FPS
         }
+        std::cout<<"Exited";
 
+        fb->clearMem();
+        fb->render();
 
     }
 
@@ -45,7 +48,6 @@ public:
 
         status=false;
         r_t.join();
-        fb->clearMem();
     }
 
 };
