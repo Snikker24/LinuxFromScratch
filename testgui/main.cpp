@@ -180,7 +180,8 @@ int main(int argc, char* argv[])
 
     Framebuffer fb(crtc, mode);
 
-    bool cycle=false;
+    bool* cycle=new bool;
+    *cycle=false;
     std::thread thd;
     if(argc==2){
 
@@ -191,8 +192,8 @@ int main(int argc, char* argv[])
         else if(arg1=="testpattern1")
             testpattern1(&fb);
         else if(arg1=="testpatterncycle"){
-            cycle=true;
-            thd=std::thread(testpattern_cycle,&fb,&cycle);
+            *cycle=true;
+            thd=std::thread(testpattern_cycle,&fb,cycle);
         }
 
     }else{
@@ -211,7 +212,7 @@ int main(int argc, char* argv[])
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin.get();
 
-    cycle=false;
+    *cycle=false;
     thd.join();
     std::cout << "Closing thread now...\n";
 
