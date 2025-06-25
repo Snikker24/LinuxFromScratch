@@ -128,7 +128,8 @@ int main()
     Renderer ren(fb);
     ren.start();
 
-    getchar();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cin.get();
 
     std::cout << "Closing thread now...\n";
 
