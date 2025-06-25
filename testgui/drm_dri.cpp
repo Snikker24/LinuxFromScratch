@@ -285,6 +285,11 @@ uint32_t DrmCrtC::id() const
     return icrtc ? icrtc->crtc_id : 0;
 }
 
+uint32_t DrmCrtC::index() const
+{
+    return idx;
+}
+
 const drmModeCrtc* DrmCrtC::unwrapped() const
 {
     return icrtc;
