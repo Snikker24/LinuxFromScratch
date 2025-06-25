@@ -159,7 +159,7 @@ public:
     const DrmCrtC& controller() const;
 
     void render();
-
+    void clearMem();
     // Non-copyable to avoid multiple owners of pxMap & fb resources
     Framebuffer(const Framebuffer&) = delete;
     Framebuffer& operator=(const Framebuffer&) = delete;

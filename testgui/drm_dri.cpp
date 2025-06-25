@@ -410,6 +410,14 @@ void Framebuffer::render()
     //}
 }
 
+
+void Framebuffer::clearMem(){
+
+    memset(pxMap, 0, fbsize);  // Clear framebuffer to black
+
+}
+
+
 Framebuffer::Framebuffer(Framebuffer&& other) noexcept
     : fb_id(other.fb_id), handle(other.handle), bpr(other.bpr), fbsize(other.fbsize),
       pxMap(other.pxMap), dmode(other.dmode), dcrtc(other.dcrtc)

@@ -22,6 +22,7 @@ private:
         std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60 FPS
         }
 
+
     }
 
 public:
@@ -44,23 +45,16 @@ public:
 
         status=false;
         r_t.join();
-
+        fb->clearMem();
     }
 
-
-
-
-
-
 };
-
-using namespace std;
 
 int index(int a, int b, std::string msg){
     if(a == b)
         return a;
     if(a > b)
-        swap(a,b);
+        std::swap(a,b);
 
     int idx;
     do {
